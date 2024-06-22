@@ -40,6 +40,12 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
     to ensure our clients get a response in a reasonable time.
     """
 
+    # TODO: it would be nice to be able to stream the responses,
+    #       but that would require a different approach where the
+    #       discovery process would be complete once the mirror has
+    #       started streaming, rather than after the response has
+    #       been read in full.
+
     concurrency_limit = 5
     global_timeout = 10
     semaphore = asyncio.Semaphore(concurrency_limit)
