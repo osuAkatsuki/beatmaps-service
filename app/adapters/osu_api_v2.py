@@ -279,7 +279,7 @@ async def get_beatmapset(beatmapset_id: int) -> BeatmapsetExtended | None:
 
 class Cursor(BaseModel):
     approved_date: int | None = None
-    score: float | None = Field(alias="_score")
+    score: float | None = Field(None, alias="_score")
     id: int
 
 
