@@ -6,17 +6,6 @@ from pydantic import BaseModel
 from app import state
 
 
-class BeatmapMirrorRequest(BaseModel):
-    request_url: str
-    api_key_id: str | None
-    mirror_name: str
-    success: bool
-    started_at: datetime
-    ended_at: datetime
-    response_size: int | None
-    response_error: str | None
-
-
 class BeatmapMirrorScore(BaseModel):
     mirror_name: str
     score: float
@@ -64,7 +53,16 @@ async def get_mirror_weight(mirror_name: str) -> int:
     return weight
 
 
-async def create(request: BeatmapMirrorRequest) -> None:
+async def create(
+    request_url: str,
+    api_key_id: str | None,
+    mirror_name: str,
+    success: bool,
+    started_at: datetime,
+    ended_at: datetime,
+    response_size: int,
+    response_error: str | None,
+) -> None:
     query = """\
         INSERT INTO beatmap_mirror_requests (
             request_url, api_key_id, mirror_name, success, started_at,
@@ -75,4 +73,16 @@ async def create(request: BeatmapMirrorRequest) -> None:
             :ended_at, :response_size, :response_error
         )
     """
-    await state.database.execute(query=query, values=request.model_dump())
+    await state.database.execute(
+        query=query,
+        values={
+            "request_url": request_url,
+            "api_key_id": api_key_id,
+            "mirror_name": mirror_name,
+            "success": success,
+            "started_at": started_at,
+            "ended_at": ended_at,
+            "response_size": response_size,
+            "response_error": response_error,
+        },
+    )

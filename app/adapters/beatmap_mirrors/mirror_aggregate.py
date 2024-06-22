@@ -49,18 +49,16 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
         except Exception as exc:
             ended_at = datetime.now()
             await beatmap_mirror_requests.create(
-                request=beatmap_mirror_requests.BeatmapMirrorRequest(
-                    request_url=f"{mirror.base_url}/d/{beatmapset_id}",
-                    api_key_id=None,
-                    mirror_name=mirror.name,
-                    success=False,
-                    started_at=started_at,
-                    ended_at=ended_at,
-                    response_size=(
-                        len(beatmap_zip_data) if beatmap_zip_data is not None else None
-                    ),
-                    response_error=str(exc),
+                request_url=f"{mirror.base_url}/d/{beatmapset_id}",
+                api_key_id=None,
+                mirror_name=mirror.name,
+                success=False,
+                started_at=started_at,
+                ended_at=ended_at,
+                response_size=(
+                    len(beatmap_zip_data) if beatmap_zip_data is not None else 0
                 ),
+                response_error=str(exc),
             )
             await BEATMAP_SELECTOR.update_all_mirror_and_selector_weights()
             logging.warning(
@@ -79,18 +77,14 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
     ended_at = datetime.now()
 
     await beatmap_mirror_requests.create(
-        request=beatmap_mirror_requests.BeatmapMirrorRequest(
-            request_url=f"{mirror.base_url}/d/{beatmapset_id}",
-            api_key_id=None,
-            mirror_name=mirror.name,
-            success=True,
-            started_at=started_at,
-            ended_at=ended_at,
-            response_size=(
-                len(beatmap_zip_data) if beatmap_zip_data is not None else None
-            ),
-            response_error=None,
-        ),
+        request_url=f"{mirror.base_url}/d/{beatmapset_id}",
+        api_key_id=None,
+        mirror_name=mirror.name,
+        success=True,
+        started_at=started_at,
+        ended_at=ended_at,
+        response_size=(len(beatmap_zip_data) if beatmap_zip_data is not None else 0),
+        response_error=None,
     )
     await BEATMAP_SELECTOR.update_all_mirror_and_selector_weights()
 
