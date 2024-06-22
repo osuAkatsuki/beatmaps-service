@@ -155,8 +155,11 @@ class Availability(BaseModel):
     more_information: str | None
 
 
+class GenreId(IntEnum): ...  # TODO
+
+
 class Genre(BaseModel):
-    id: int
+    id: GenreId
     name: str
 
 
@@ -164,8 +167,11 @@ class Description(BaseModel):
     description: str  # (html string)
 
 
+class LanguageId(IntEnum): ...  # TODO
+
+
 class Language(BaseModel):
-    id: int
+    id: LanguageId
     name: str
 
 
@@ -264,7 +270,15 @@ class BeatmapsetSearchResponse(BaseModel):
     total: int
 
 
-class SearchLegacyRankedStatus(IntEnum):
+class GeneralSetting(StrEnum):
+    RECOMMENDED = "recommended"
+    CONVERTS = "converts"
+    FOLLOWS = "follows"
+    SPOTLIGHTS = "spotlights"
+    FEATURED_ARTISTS = "featured_artists"
+
+
+class Category(IntEnum):
     RANKED = 0
     FAVOURITES = 2
     QUALIFIED = 3
@@ -278,41 +292,74 @@ class SearchLegacyRankedStatus(IntEnum):
     def from_osu_api_status(
         cls,
         osu_api_status: RankedStatus,
-    ) -> "SearchLegacyRankedStatus | None":
+    ) -> "Category | None":
         return {
             RankedStatus.NOT_SUBMITTED: None,
-            RankedStatus.PENDING: SearchLegacyRankedStatus.PENDING,
+            RankedStatus.PENDING: Category.PENDING,
             RankedStatus.UPDATE_AVAILABLE: None,
-            RankedStatus.RANKED: SearchLegacyRankedStatus.RANKED,
-            RankedStatus.APPROVED: SearchLegacyRankedStatus.RANKED,
-            RankedStatus.QUALIFIED: SearchLegacyRankedStatus.QUALIFIED,
-            RankedStatus.LOVED: SearchLegacyRankedStatus.LOVED,
+            RankedStatus.RANKED: Category.RANKED,
+            RankedStatus.APPROVED: Category.RANKED,
+            RankedStatus.QUALIFIED: Category.QUALIFIED,
+            RankedStatus.LOVED: Category.LOVED,
         }.get(osu_api_status)
+
+
+class SortBy(StrEnum):
+    ARTIST_ASC = "title_asc"
+    ARTIST_DESC = "title_desc"
+    DIFFICULTY_ASC = "artist_asc"
+    DIFFICULTY_DESC = "artist_desc"
+    FAVOURITES_ASC = "difficulty_asc"
+    FAVOURITES_DESC = "difficulty_desc"
+    PLAYS_ASC = "ranked_asc"
+    PLAYS_DESC = "ranked_desc"
+    RANKED_ASC = "rating_asc"
+    RANKED_DESC = "rating_desc"
+    RATING_ASC = "plays_asc"
+    RATING_DESC = "plays_desc"
+    TITLE_ASC = "favourites_asc"
+    TITLE_DES = "favourites_desc"
+
+
+class Extra(StrEnum):
+    VIDEO = "video"
+    STORYBOARD = "storyboard"
 
 
 async def search_beatmapsets(
     query: str,
     *,
-    ranked_status: SearchLegacyRankedStatus,
-    mode: GameMode,
-    page: int,
-    page_size: int,
+    general_settings: set[GeneralSetting] | None = None,
+    extras: set[Extra] | None = None,
+    mode: GameMode | None = None,
+    category: Category | None = None,
+    filter_nsfw: bool = True,
+    language_id: LanguageId | None = None,
+    genre_id: GenreId | None = None,
+    sort_by: SortBy | None = None,
+    page: int | None = None,
     cursor_string: str | None = None,
 ) -> BeatmapsetSearchResponse:
-    # TODO: support more parameters. Here is a sample query:
-    # https://osu.ppy.sh/beatmapsets/search?e=&c=&g=&l=&m=&nsfw=&played=&q=&r=&sort=&s=&cursor_string=eyJhcHByb3ZlZF9kYXRlIjoxNzE4ODQ3Nzk0MDAwLCJpZCI6MjEzNDYyNX0
+    if [page, cursor_string].count(None) != 1:
+        raise ValueError("Exactly one of page or cursor_string must be provided")
 
     osu_api_response_data: dict[str, Any] | None = None
     try:
         response = await osu_api_v2_http_client.get(
             "beatmapsets/search",
             params={
-                "q": query,
+                "e": ".".join(extras) if extras else "",
+                "c": ".".join(general_settings) if general_settings else "",
+                "g": genre_id.value if genre_id else "",
+                "l": language_id.value if language_id else "",
                 "m": mode,
-                "r": ranked_status,
-                "page": page,
-                "limit": page_size,
-                "cursor_string": cursor_string,
+                "nsfw": "" if filter_nsfw else "false",
+                "played": "",
+                "q": query,
+                "sort": sort_by.value if sort_by else "",
+                "s": category,
+                **({"page": page} if page else {}),
+                **({"cursor_string": cursor_string} if cursor_string else {}),
             },
         )
         response.raise_for_status()
