@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
+
 from app.adapters import osu_api_v2
 
 router = APIRouter()

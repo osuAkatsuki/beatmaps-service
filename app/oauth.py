@@ -1,4 +1,6 @@
-from typing import AsyncGenerator, Generator
+from collections.abc import AsyncGenerator
+from collections.abc import Generator
+
 import httpx
 
 
@@ -33,14 +35,16 @@ class AsyncOAuth(httpx.Auth):
         self.access_token = data["access_token"]
 
     def sync_auth_flow(
-        self, request: httpx.Request
+        self,
+        request: httpx.Request,
     ) -> Generator[httpx.Request, httpx.Response, None]:
         raise RuntimeError(
-            "Cannot use a sync authentication class with httpx.AsyncClient"
+            "Cannot use a sync authentication class with httpx.AsyncClient",
         )
 
     async def async_auth_flow(
-        self, request: httpx.Request
+        self,
+        request: httpx.Request,
     ) -> AsyncGenerator[httpx.Request, httpx.Response]:
         if self.requires_request_body:
             await request.aread()

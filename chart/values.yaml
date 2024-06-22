@@ -1,0 +1,38 @@
+apps:
+  - name: beatmaps-service-api
+    environment: production
+    codebase: beatmaps-service
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 80
+    container:
+      image:
+        repository: osuakatsuki/beatmaps-service
+        tag: latest
+      port: 80
+      readinessProbe:
+        httpGet:
+          path: /_health
+          port: 80
+        initialDelaySeconds: 10
+        periodSeconds: 10
+        timeoutSeconds: 3
+        successThreshold: 1
+        failureThreshold: 3
+      resources:
+        limits:
+          cpu: 400m
+          memory: 400Mi
+        requests:
+          cpu: 300m
+          memory: 300Mi
+      env:
+        - name: APP_COMPONENT
+          value: api
+      imagePullSecrets:
+        - name: osuakatsuki-registry-secret
+    service:
+      type: ClusterIP
+      port: 80

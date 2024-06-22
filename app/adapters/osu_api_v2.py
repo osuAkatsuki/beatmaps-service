@@ -1,8 +1,11 @@
 from datetime import datetime
 from enum import StrEnum
-from pydantic import BaseModel
-from app import oauth, settings
+
 import httpx
+from pydantic import BaseModel
+
+from app import oauth
+from app import settings
 
 http_client = httpx.AsyncClient(
     base_url="https://osu.ppy.sh/api/v2/",

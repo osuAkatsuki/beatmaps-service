@@ -1,13 +1,24 @@
 #!/usr/bin/env python3
-from fastapi import FastAPI
+import uvicorn
 
-from app.api.v1 import v1_router
+from app import logger
+from app import settings
 
-app = FastAPI()
 
-app.include_router(v1_router)
+def main() -> int:
+    logger.configure_logging()
+
+    uvicorn.run(
+        "app.init_api:asgi_app",
+        reload=settings.CODE_HOTRELOAD,
+        server_header=False,
+        date_header=False,
+        host=settings.APP_HOST,
+        port=settings.APP_PORT,
+        access_log=False,
+    )
+    return 0
+
 
 if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run("main:app")
+    exit(main())
