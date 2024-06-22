@@ -1,14 +1,12 @@
-import asyncio
 import logging
-import random
-import time
 
-from pydantic import BaseModel
+from datetime import datetime
 
 from app.adapters.beatmap_mirrors import BeatmapMirror
 
 from app.adapters.beatmap_mirrors.nerinyan import NerinyanMirror
 from app.adapters.beatmap_mirrors.osu_direct import OsuDirectMirror
+from app.repositories import beatmap_mirror_requests
 
 # from app.adapters.beatmap_mirrors.gatari import GatariMirror
 # from app.adapters.beatmap_mirrors.mino import MinoMirror
@@ -24,51 +22,36 @@ BEATMAP_MIRRORS: list[BeatmapMirror] = [
 ]
 
 
-async def run_with_semaphore(
-    semaphore: asyncio.Semaphore,
-    mirror: BeatmapMirror,
-    beatmapset_id: int,
-) -> tuple[BeatmapMirror, bytes | None]:
-    async with semaphore:
-        return (mirror, await mirror.fetch_beatmap_zip_data(beatmapset_id))
-
-
 class TimedOut: ...
 
 
 TIMED_OUT = TimedOut()
 
 
-class BeatmapMirrorRequest(BaseModel):
-    request_url: str
-    api_key_id: str | None
-    mirror_name: str
-    success: bool
-    started_at: float
-    ended_at: float
-    response_code: int | None
-    response_size: int | None
-    response_error: str | None
-
-
 async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
     """\
-    Parallelize calls with a timeout across up to 5 mirrors at time,
-    to ensure our clients get a response in a reasonable time.
+    Fetch a beatmapset .osz2 file by any means necessary, balancing upon
+    multiple underlying beatmap mirrors to ensure the best possible
+    availability and performance.
     """
-
-    # TODO: it would be nice to be able to stream the responses,
-    #       but that would require a different approach where the
-    #       discovery process would be complete once the mirror has
-    #       started streaming, rather than after the response has
-    #       been read in full.
-
-    start_time = time.time()
+    started_at = datetime.now()
     for mirror in BEATMAP_MIRRORS:
         try:
             result = await mirror.fetch_beatmap_zip_data(beatmapset_id)
-        except Exception:
-            # TODO: log failure to `beatmap_mirror_requests` table
+        except Exception as exc:
+            ended_at = datetime.now()
+            await beatmap_mirror_requests.log_beatmap_mirror_request(
+                request=beatmap_mirror_requests.BeatmapMirrorRequest(
+                    request_url=f"{mirror.base_url}/d/{beatmapset_id}",
+                    api_key_id=None,
+                    mirror_name=mirror.name,
+                    success=False,
+                    started_at=started_at,
+                    ended_at=ended_at,
+                    response_size=None,
+                    response_error=str(exc),
+                ),
+            )
             logging.warning(
                 "Failed to fetch beatmap from mirror",
                 exc_info=True,
@@ -81,13 +64,25 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
         return TIMED_OUT
 
     if result is None:
+        # TODO: should log this case
         return None
 
-    # TODO: log success to `beatmap_mirror_requests` table
+    ended_at = datetime.now()
 
-    end_time = time.time()
+    await beatmap_mirror_requests.log_beatmap_mirror_request(
+        request=beatmap_mirror_requests.BeatmapMirrorRequest(
+            request_url=f"{mirror.base_url}/d/{beatmapset_id}",
+            api_key_id=None,
+            mirror_name=mirror.name,
+            success=True,
+            started_at=started_at,
+            ended_at=ended_at,
+            response_size=len(result) if result else None,
+            response_error=None,
+        ),
+    )
 
-    ms_elapsed = (end_time - start_time) * 1000
+    ms_elapsed = (ended_at.timestamp() - started_at.timestamp()) * 1000
 
     logging.info(
         "A mirror was first to finish during .osz2 aggregate request",
