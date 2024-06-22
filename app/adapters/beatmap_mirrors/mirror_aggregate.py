@@ -47,7 +47,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
     #       been read in full.
 
     concurrency_limit = 5
-    global_timeout = 10
+    global_timeout = 15
     semaphore = asyncio.Semaphore(concurrency_limit)
 
     coroutines = [
