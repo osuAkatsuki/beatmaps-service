@@ -6,7 +6,7 @@ import fastapi.responses
 
 
 class JSONEncoder(json.JSONEncoder):
-    def default(self, o):
+    def default(self, o: typing.Any) -> typing.Any:
         if isinstance(o, datetime.datetime):
             # Append "Z" for utc
             tz_suffix = "Z" if o.tzinfo in (None, datetime.UTC) else "%z"
