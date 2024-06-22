@@ -106,10 +106,12 @@ class CheesegullBeatmapset(BaseModel):
 
 
 @router.get("/api/v1/cheesegull/b/{beatmap_id}")
+@router.get("/api/b/{beatmap_id}")
 async def cheesegull_beatmap(beatmap_id: int):
     osu_api_beatmap = await osu_api_v2.get_beatmap(beatmap_id)
     if osu_api_beatmap is None:
         return Response(status_code=404)
+
     cheesegull_beatmap = CheesegullBeatmap.from_osu_api_beatmap(osu_api_beatmap)
     logging.info(
         "Serving cheesegull beatmap",
@@ -119,10 +121,12 @@ async def cheesegull_beatmap(beatmap_id: int):
 
 
 @router.get("/api/v1/cheesegull/s/{beatmapset_id}")
+@router.get("/api/s/{beatmapset_id}")
 async def cheesegull_beatmapset(beatmapset_id: int):
     osu_api_beatmapset = await osu_api_v2.get_beatmapset(beatmapset_id)
     if osu_api_beatmapset is None:
         return Response(status_code=404)
+
     cheesegull_beatmapset = CheesegullBeatmapset.from_osu_api_beatmapset(
         osu_api_beatmapset,
     )
