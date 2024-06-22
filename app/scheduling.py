@@ -33,12 +33,6 @@ class DynamicWeightedRoundRobin:
             beatmap_mirror.weight = await beatmap_mirror_requests.get_mirror_weight(
                 beatmap_mirror.name,
             )
-            print(
-                "Beatmap mirror",
-                beatmap_mirror.name,
-                "has weight",
-                beatmap_mirror.weight,
-            )
 
         self.max_weight = max(mirror.weight for mirror in self.mirrors)
         self.gcd_weight = self._calculate_gcd(
