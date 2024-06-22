@@ -16,13 +16,13 @@ from enum import IntEnum
 from fastapi import APIRouter
 from fastapi import Query
 from fastapi import Response
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from app.adapters.osu_api_v2 import api
 from app.adapters.osu_api_v2.models import BeatmapExtended
 from app.adapters.osu_api_v2.models import BeatmapsetExtended
 from app.adapters.osu_api_v2.models import Category
+from app.api.responses import JSONResponse
 from app.common_models import GameMode
 from app.common_models import RankedStatus
 
