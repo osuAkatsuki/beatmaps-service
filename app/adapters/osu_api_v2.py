@@ -155,7 +155,20 @@ class Availability(BaseModel):
     more_information: str | None
 
 
-class GenreId(IntEnum): ...  # TODO
+class GenreId(IntEnum):
+    UNSPECIFIED = 1
+    VIDEO_GAME = 2
+    ANIME = 3
+    ROCK = 4
+    POP = 5
+    OTHER = 6
+    NOVELTY = 7
+    HIP_HOP = 9
+    ELECTRONIC = 10
+    METAL = 11
+    CLASSICAL = 12
+    FOLK = 13
+    JAZZ = 14
 
 
 class Genre(BaseModel):
@@ -167,7 +180,21 @@ class Description(BaseModel):
     description: str  # (html string)
 
 
-class LanguageId(IntEnum): ...  # TODO
+class LanguageId(IntEnum):
+    UNSPECIFIED = 1
+    ENGLISH = 2
+    JAPANESE = 3
+    CHINESE = 4
+    INSTRUMENTAL = 5
+    KOREAN = 6
+    FRENCH = 7
+    GERMAN = 8
+    SWEDISH = 9
+    SPANISH = 10
+    ITALIAN = 11
+    RUSSIAN = 12
+    POLISH = 13
+    OTHER = 14
 
 
 class Language(BaseModel):
