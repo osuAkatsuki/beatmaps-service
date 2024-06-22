@@ -59,7 +59,16 @@ osu_api_v2_http_client = httpx.AsyncClient(
 )
 
 
+BEATMAPS_CACHE: dict[int, BeatmapExtended] = {}
+
+
 async def get_beatmap(beatmap_id: int) -> BeatmapExtended | None:
+    if beatmap_id in BEATMAPS_CACHE:
+        logging.info("Cache hit", extra={"resource": "beatmap", "id": beatmap_id})
+        return BEATMAPS_CACHE[beatmap_id]
+
+    logging.info("Cache miss", extra={"resource": "beatmap", "id": beatmap_id})
+
     osu_api_response_data: dict[str, Any] | None = None
     try:
         response = await osu_api_v2_http_client.get(f"beatmaps/{beatmap_id}")
@@ -68,7 +77,9 @@ async def get_beatmap(beatmap_id: int) -> BeatmapExtended | None:
         response.raise_for_status()
         osu_api_response_data = response.json()
         assert osu_api_response_data is not None
-        return BeatmapExtended(**osu_api_response_data)
+        resp = BeatmapExtended(**osu_api_response_data)
+        BEATMAPS_CACHE[beatmap_id] = resp
+        return resp
     except Exception:
         logging.exception(
             "Failed to fetch beatmap from osu! API",
@@ -77,7 +88,16 @@ async def get_beatmap(beatmap_id: int) -> BeatmapExtended | None:
         raise
 
 
+BEATMAPSETS_CACHE: dict[int, BeatmapsetExtended] = {}
+
+
 async def get_beatmapset(beatmapset_id: int) -> BeatmapsetExtended | None:
+    if beatmapset_id in BEATMAPSETS_CACHE:
+        logging.info("Cache hit", extra={"resource": "beatmapset", "id": beatmapset_id})
+        return BEATMAPSETS_CACHE[beatmapset_id]
+
+    logging.info("Cache miss", extra={"resource": "beatmapset", "id": beatmapset_id})
+
     osu_api_response_data: dict[str, Any] | None = None
     try:
         response = await osu_api_v2_http_client.get(f"beatmapsets/{beatmapset_id}")
@@ -86,7 +106,9 @@ async def get_beatmapset(beatmapset_id: int) -> BeatmapsetExtended | None:
         response.raise_for_status()
         osu_api_response_data = response.json()
         assert osu_api_response_data is not None
-        return BeatmapsetExtended(**osu_api_response_data)
+        resp = BeatmapsetExtended(**osu_api_response_data)
+        BEATMAPSETS_CACHE[beatmapset_id] = resp
+        return resp
     except Exception:
         logging.exception(
             "Failed to fetch beatmapset from osu! API",
