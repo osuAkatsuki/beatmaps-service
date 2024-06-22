@@ -7,6 +7,7 @@ import httpx
 
 
 class BeatmapMirror(ABC):
+    name: ClassVar[str]
     base_url: ClassVar[str]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:

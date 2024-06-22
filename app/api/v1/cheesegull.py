@@ -1,5 +1,5 @@
 """\
-Aims to provide an API aligned with the Cheesegull API Specification.
+Provides an API aligned with the Cheesegull API Specification.
 
 API Spec: https://docs.ripple.moe/docs/cheesegull/cheesegull-api
 
@@ -14,15 +14,20 @@ from datetime import datetime
 from enum import IntEnum
 
 from fastapi import APIRouter
+from fastapi import Header
 from fastapi import Query
 from fastapi import Response
 from pydantic import BaseModel
 
 from app.adapters.osu_api_v2 import api
-from app.adapters.osu_api_v2.api import Category
+from app.adapters.osu_api_v2.models import BeatmapExtended
+from app.adapters.osu_api_v2.models import BeatmapsetExtended
+from app.adapters.osu_api_v2.models import Category
+from app.api.responses import JSONResponse
+from app.common_models import GameMode
 from app.common_models import RankedStatus
 
-router = APIRouter()
+router = APIRouter(tags=["Cheesegull API"])
 
 
 class CheesegullBeatmap(BaseModel):
@@ -46,7 +51,7 @@ class CheesegullBeatmap(BaseModel):
     @classmethod
     def from_osu_api_beatmap(
         cls,
-        beatmap: api.BeatmapExtended,
+        beatmap: BeatmapExtended,
     ) -> "CheesegullBeatmap":
         return cls(
             BeatmapID=beatmap.id,
@@ -88,11 +93,11 @@ class CheesegullBeatmapset(BaseModel):
     @classmethod
     def from_osu_api_beatmapset(
         cls,
-        osu_api_beatmapset: api.BeatmapsetExtended,
+        osu_api_beatmapset: BeatmapsetExtended,
     ) -> "CheesegullBeatmapset":
         children_beatmaps: list[CheesegullBeatmap] = []
         for osu_api_beatmap in osu_api_beatmapset.beatmaps or []:
-            if not isinstance(osu_api_beatmap, api.BeatmapExtended):
+            if not isinstance(osu_api_beatmap, BeatmapExtended):
                 raise ValueError("beatmapset.beatmaps is not a list of BeatmapExtended")
             cheesegull_beatmap = CheesegullBeatmap.from_osu_api_beatmap(osu_api_beatmap)
             children_beatmaps.append(cheesegull_beatmap)
@@ -121,7 +126,11 @@ class CheesegullBeatmapset(BaseModel):
 
 
 @router.get("/api/b/{beatmap_id}")
-async def cheesegull_beatmap(beatmap_id: int):
+async def cheesegull_beatmap(
+    beatmap_id: int,
+    client_ip_address: str | None = Header(None, alias="X-Real-IP"),
+    client_user_agent: str | None = Header(None, alias="User-Agent"),
+) -> Response:
     osu_api_beatmap = await api.get_beatmap(beatmap_id)
     if osu_api_beatmap is None:
         return Response(status_code=404)
@@ -129,13 +138,21 @@ async def cheesegull_beatmap(beatmap_id: int):
     cheesegull_beatmap = CheesegullBeatmap.from_osu_api_beatmap(osu_api_beatmap)
     logging.info(
         "Serving cheesegull beatmap",
-        extra={"beatmap_id": beatmap_id},
+        extra={
+            "beatmap_id": beatmap_id,
+            "client_ip_address": client_ip_address,
+            "client_user_agent": client_user_agent,
+        },
     )
-    return cheesegull_beatmap.model_dump()
+    return JSONResponse(content=cheesegull_beatmap.model_dump())
 
 
 @router.get("/api/s/{beatmapset_id}")
-async def cheesegull_beatmapset(beatmapset_id: int):
+async def cheesegull_beatmapset(
+    beatmapset_id: int,
+    client_ip_address: str | None = Header(None, alias="X-Real-IP"),
+    client_user_agent: str | None = Header(None, alias="User-Agent"),
+) -> Response:
     osu_api_beatmapset = await api.get_beatmapset(beatmapset_id)
     if osu_api_beatmapset is None:
         return Response(status_code=404)
@@ -145,9 +162,13 @@ async def cheesegull_beatmapset(beatmapset_id: int):
     )
     logging.info(
         "Serving cheesegull beatmapset",
-        extra={"beatmapset_id": beatmapset_id},
+        extra={
+            "beatmapset_id": beatmapset_id,
+            "client_ip_address": client_ip_address,
+            "client_user_agent": client_user_agent,
+        },
     )
-    return cheesegull_beatmapset.model_dump()
+    return JSONResponse(content=cheesegull_beatmapset.model_dump())
 
 
 class CheesegullRankedStatus(IntEnum):
@@ -171,11 +192,13 @@ def get_osu_api_v2_search_ranked_status(
 async def cheesegull_search(
     query: str = "",
     status: CheesegullRankedStatus | None = None,
-    mode: api.GameMode | None = None,
+    mode: GameMode | None = None,
     offset: int = 0,
     amount: int = Query(50, ge=1, le=100),
+    client_ip_address: str | None = Header(None, alias="X-Real-IP"),
+    client_user_agent: str | None = Header(None, alias="User-Agent"),
     # TODO: auth, or at least per-ip ratelimit
-):
+) -> Response:
     if status is not None:
         ranked_status = get_osu_api_v2_search_ranked_status(status)
         if ranked_status is None:
@@ -193,6 +216,9 @@ async def cheesegull_search(
             category=ranked_status,
             page=page,
         )
+        if not osu_api_search_response.beatmapsets:
+            logging.info("Break test")
+            break
         cheesegull_beatmapsets.extend(
             [
                 CheesegullBeatmapset.from_osu_api_beatmapset(osu_api_beatmapset)
@@ -208,6 +234,10 @@ async def cheesegull_search(
             "query": query,
             "page": page,
             "results_count": len(cheesegull_beatmapsets),
+            "client_ip_address": client_ip_address,
+            "client_user_agent": client_user_agent,
         },
     )
-    return [beatmapset.model_dump() for beatmapset in cheesegull_beatmapsets]
+    return JSONResponse(
+        content=[beatmapset.model_dump() for beatmapset in cheesegull_beatmapsets],
+    )

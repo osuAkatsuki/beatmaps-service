@@ -207,8 +207,8 @@ class Search(BaseModel):
 
 class BeatmapsetSearchResponse(BaseModel):
     beatmapsets: list[BeatmapsetExtended]
-    cursor: Cursor
-    cursor_string: str
+    cursor: Cursor | None
+    cursor_string: str | None
     error: Any | None
     recommended_difficulty: float | None
     search: Search

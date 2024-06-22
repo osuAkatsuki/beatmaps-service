@@ -3,11 +3,11 @@ from fastapi import Response
 
 from app.adapters.beatmap_mirrors import mirror_aggregate
 
-router = APIRouter()
+router = APIRouter(tags=["osz2 Files"])
 
 
 @router.get("/api/d/{beatmapset_id}")
-async def download_beatmapset_osz2(beatmapset_id: int):
+async def download_beatmapset_osz2(beatmapset_id: int) -> Response:
     beatmap_zip_data = await mirror_aggregate.fetch_beatmap_zip_data(beatmapset_id)
     if beatmap_zip_data is not None:
         return Response(

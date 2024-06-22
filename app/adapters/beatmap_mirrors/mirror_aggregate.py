@@ -1,9 +1,7 @@
 import asyncio
+import logging
 import random
-from collections.abc import Awaitable
-from collections.abc import Callable
-from typing import ParamSpec
-from typing import TypeVar
+import time
 
 from app.adapters.beatmap_mirrors import BeatmapMirror
 from app.adapters.beatmap_mirrors.gatari import GatariMirror
@@ -22,18 +20,13 @@ BEATMAP_MIRRORS: list[BeatmapMirror] = [
 ]
 
 
-P = ParamSpec("P")
-R = TypeVar("R")
-
-
 async def run_with_semaphore(
     semaphore: asyncio.Semaphore,
-    coro: Callable[P, Awaitable[R]],
-    *args: P.args,
-    **kwargs: P.kwargs,
-) -> R:
+    mirror: BeatmapMirror,
+    beatmapset_id: int,
+) -> tuple[BeatmapMirror, bytes | None]:
     async with semaphore:
-        return await coro(*args, **kwargs)
+        return (mirror, await mirror.fetch_beatmap_zip_data(beatmapset_id))
 
 
 class TimedOut: ...
@@ -58,6 +51,8 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
     global_timeout = 15
     semaphore = asyncio.Semaphore(concurrency_limit)
 
+    start_time = time.time()
+
     # TODO: prioritization based on reliability, speed, etc.
     random.shuffle(BEATMAP_MIRRORS)
 
@@ -65,7 +60,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
         asyncio.create_task(
             run_with_semaphore(
                 semaphore,
-                mirror.fetch_beatmap_zip_data,
+                mirror,
                 beatmapset_id,
             ),
         )
@@ -85,4 +80,19 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
 
     # TODO: log which mirrors finished, and which timed out
 
-    return first_result
+    mirror, result = first_result
+    if result is None:
+        return None
+
+    end_time = time.time()
+    ms_elapsed = (end_time - start_time) * 1000
+
+    logging.info(
+        "A mirror was first to finish during .osz2 aggregate request",
+        extra={
+            "mirror_name": mirror.name,
+            "beatmapset_id": beatmapset_id,
+            "ms_elapsed": ms_elapsed,
+        },
+    )
+    return result
