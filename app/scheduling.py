@@ -45,7 +45,7 @@ class DynamicWeightedRoundRobin:
             [mirror.weight for mirror in self.mirrors],
         )
 
-    def select_mirror(self) -> BeatmapMirror | None:
+    def select_mirror(self) -> BeatmapMirror:
         while True:
             self.index = (self.index + 1) % len(self.mirrors)
             if self.index == 0:
@@ -53,7 +53,7 @@ class DynamicWeightedRoundRobin:
                 if self.current_weight <= 0:
                     self.current_weight = self.max_weight
                     if self.current_weight == 0:
-                        return None
+                        raise RuntimeError("All mirrors have 0 weight.")
 
             if self.mirrors[self.index].weight >= self.current_weight:
                 return self.mirrors[self.index]

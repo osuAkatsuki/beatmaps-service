@@ -40,9 +40,10 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
 
     await BEATMAP_SELECTOR.update_all_mirror_and_selector_weights()
 
-    while (mirror := BEATMAP_SELECTOR.select_mirror()) is not None:
+    while True:
+        mirror = BEATMAP_SELECTOR.select_mirror()
         try:
-            result = await mirror.fetch_beatmap_zip_data(beatmapset_id)
+            beatmap_zip_data = await mirror.fetch_beatmap_zip_data(beatmapset_id)
         except Exception as exc:
             ended_at = datetime.now()
             await beatmap_mirror_requests.create(
@@ -66,12 +67,6 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
             continue
         else:
             break
-    else:
-        return TIMED_OUT
-
-    if result is None:
-        # TODO: should log this case
-        return None
 
     ended_at = datetime.now()
 
@@ -83,7 +78,9 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
             success=True,
             started_at=started_at,
             ended_at=ended_at,
-            response_size=len(result) if result else None,
+            response_size=(
+                len(beatmap_zip_data) if beatmap_zip_data is not None else None
+            ),
             response_error=None,
         ),
     )
@@ -97,12 +94,20 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
             "mirror_name": mirror.name,
             "beatmapset_id": beatmapset_id,
             "ms_elapsed": ms_elapsed,
-            "data_size": len(result),
+            "data_size": (
+                len(beatmap_zip_data) if beatmap_zip_data is not None else None
+            ),
             "bad_data": (
-                result
-                if not result.startswith(b"PK\x03\x04") or len(result) < 20_000
+                beatmap_zip_data
+                if (
+                    beatmap_zip_data is not None
+                    and (
+                        not beatmap_zip_data.startswith(b"PK\x03\x04")
+                        or len(beatmap_zip_data) < 20_000
+                    )
+                )
                 else None
             ),
         },
     )
-    return result
+    return beatmap_zip_data
