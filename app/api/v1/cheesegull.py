@@ -1,5 +1,5 @@
 """\
-Aims to provide an API aligned with the Cheesegull API Specification.
+Provides an API aligned with the Cheesegull API Specification.
 
 API Spec: https://docs.ripple.moe/docs/cheesegull/cheesegull-api
 
