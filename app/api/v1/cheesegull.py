@@ -125,7 +125,7 @@ class CheesegullBeatmapset(BaseModel):
 
 
 @router.get("/api/b/{beatmap_id}")
-async def cheesegull_beatmap(beatmap_id: int):
+async def cheesegull_beatmap(beatmap_id: int) -> Response:
     osu_api_beatmap = await api.get_beatmap(beatmap_id)
     if osu_api_beatmap is None:
         return Response(status_code=404)
@@ -135,11 +135,11 @@ async def cheesegull_beatmap(beatmap_id: int):
         "Serving cheesegull beatmap",
         extra={"beatmap_id": beatmap_id},
     )
-    return cheesegull_beatmap.model_dump()
+    return JSONResponse(content=cheesegull_beatmap.model_dump())
 
 
 @router.get("/api/s/{beatmapset_id}")
-async def cheesegull_beatmapset(beatmapset_id: int):
+async def cheesegull_beatmapset(beatmapset_id: int) -> Response:
     osu_api_beatmapset = await api.get_beatmapset(beatmapset_id)
     if osu_api_beatmapset is None:
         return Response(status_code=404)
@@ -151,7 +151,7 @@ async def cheesegull_beatmapset(beatmapset_id: int):
         "Serving cheesegull beatmapset",
         extra={"beatmapset_id": beatmapset_id},
     )
-    return cheesegull_beatmapset.model_dump()
+    return JSONResponse(content=cheesegull_beatmapset.model_dump())
 
 
 class CheesegullRankedStatus(IntEnum):

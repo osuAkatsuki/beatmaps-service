@@ -7,7 +7,7 @@ router = APIRouter()
 
 
 @router.get("/api/d/{beatmapset_id}")
-async def download_beatmapset_osz2(beatmapset_id: int):
+async def download_beatmapset_osz2(beatmapset_id: int) -> Response:
     beatmap_zip_data = await mirror_aggregate.fetch_beatmap_zip_data(beatmapset_id)
     if beatmap_zip_data is not None:
         return Response(
