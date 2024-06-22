@@ -93,11 +93,21 @@ class BeatmapExtended(Beatmap):
 
 
 async def get_beatmap(beatmap_id: int) -> BeatmapExtended | None:
-    response = await osu_api_v2_http_client.get(f"beatmaps/{beatmap_id}")
-    if response.status_code == 404:
-        return None
-    response.raise_for_status()
-    return BeatmapExtended(**response.json())
+    osu_api_response_data: dict[str, Any] | None = None
+    try:
+        response = await osu_api_v2_http_client.get(f"beatmaps/{beatmap_id}")
+        if response.status_code == 404:
+            return None
+        response.raise_for_status()
+        osu_api_response_data = response.json()
+        assert osu_api_response_data is not None
+        return BeatmapExtended(**osu_api_response_data)
+    except Exception:
+        logging.exception(
+            "Failed to fetch beatmap from osu! API",
+            extra={"osu_api_response_data": osu_api_response_data},
+        )
+        raise
 
 
 class Covers(BaseModel):
@@ -197,8 +207,18 @@ class Beatmapset(BaseModel):
 
 
 async def get_beatmapset(beatmapset_id: int) -> Beatmapset | None:
-    response = await osu_api_v2_http_client.get(f"beatmapsets/{beatmapset_id}")
-    if response.status_code == 404:
-        return None
-    response.raise_for_status()
-    return Beatmapset(**response.json())
+    osu_api_response_data: dict[str, Any] | None = None
+    try:
+        response = await osu_api_v2_http_client.get(f"beatmapsets/{beatmapset_id}")
+        if response.status_code == 404:
+            return None
+        response.raise_for_status()
+        osu_api_response_data = response.json()
+        assert osu_api_response_data is not None
+        return Beatmapset(**osu_api_response_data)
+    except Exception:
+        logging.exception(
+            "Failed to fetch beatmapset from osu! API",
+            extra={"osu_api_response_data": osu_api_response_data},
+        )
+        raise
