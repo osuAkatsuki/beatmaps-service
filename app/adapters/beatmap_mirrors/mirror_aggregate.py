@@ -94,6 +94,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
             "beatmapset_id": beatmapset_id,
             "ms_elapsed": ms_elapsed,
             "data_size": len(result),
+            "bad_data": result if len(result) < 500 else None,
         },
     )
     return result
