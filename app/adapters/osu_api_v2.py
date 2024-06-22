@@ -190,7 +190,7 @@ class Beatmapset(BaseModel):
 
     beatmaps: list[BeatmapExtended] | None
     converts: list[BeatmapExtended]
-    current_nominations: list[str] | None
+    current_nominations: list[Any] | None
     current_user_attributes: Any | None = None  # TODO
     description: Description
     discussions: Any = None  # TODO
