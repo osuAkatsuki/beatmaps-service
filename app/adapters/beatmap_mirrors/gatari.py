@@ -4,6 +4,7 @@ from app.adapters.beatmap_mirrors import BeatmapMirror
 
 
 class GatariMirror(BeatmapMirror):
+    name = "gatari"
     base_url = "https://osu.gatari.pw"
 
     async def fetch_beatmap_zip_data(self, beatmapset_id: int) -> bytes | None:

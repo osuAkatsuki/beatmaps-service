@@ -4,6 +4,7 @@ from app.adapters.beatmap_mirrors import BeatmapMirror
 
 
 class RippleMirror(BeatmapMirror):
+    name = "ripple"
     base_url = "https://storage.ripple.moe"
 
     async def fetch_beatmap_zip_data(self, beatmapset_id: int) -> bytes | None:
