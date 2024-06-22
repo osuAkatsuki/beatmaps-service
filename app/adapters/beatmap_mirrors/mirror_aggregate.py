@@ -71,9 +71,13 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
             )
             await BEATMAP_SELECTOR.update_all_mirror_and_selector_weights()
             logging.warning(
-                "Failed to fetch beatmap from mirror",
+                "Failed to fetch beatmapset osz2 from mirror",
                 exc_info=True,
-                extra={"mirror": mirror.name},
+                extra={
+                    "mirror_name": mirror.name,
+                    "mirror_weight": mirror.weight,
+                    "beatmapset_id": beatmapset_id,
+                },
             )
             continue
         else:
