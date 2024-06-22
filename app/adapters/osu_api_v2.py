@@ -76,8 +76,10 @@ class BeatmapExtended(Beatmap):
     url: str
 
 
-async def get_beatmap(beatmap_id: int) -> BeatmapExtended:
+async def get_beatmap(beatmap_id: int) -> BeatmapExtended | None:
     response = await http_client.get(f"beatmaps/{beatmap_id}")
+    if response.status_code == 404:
+        return None
     response.raise_for_status()
     return BeatmapExtended(**response.json())
 
@@ -178,7 +180,9 @@ class Beatmapset(BaseModel):
     track_id: int | None
 
 
-async def get_beatmapset(beatmapset_id: int) -> Beatmapset:
+async def get_beatmapset(beatmapset_id: int) -> Beatmapset | None:
     response = await http_client.get(f"beatmapsets/{beatmapset_id}")
+    if response.status_code == 404:
+        return None
     response.raise_for_status()
     return Beatmapset(**response.json())
