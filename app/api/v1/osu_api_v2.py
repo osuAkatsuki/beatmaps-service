@@ -16,7 +16,7 @@ router = APIRouter()
 
 
 @router.get("/api/v2/beatmapsets/{beatmapset_id}")
-async def get_beatmapset(beatmapset_id: int):
+async def get_beatmapset(beatmapset_id: int) -> Response:
     osu_api_beatmapset = await api.get_beatmapset(beatmapset_id)
     if osu_api_beatmapset is None:
         return Response(status_code=404)
@@ -25,7 +25,7 @@ async def get_beatmapset(beatmapset_id: int):
 
 
 @router.get("/api/v2/beatmaps/{beatmap_id}")
-async def get_beatmap(beatmap_id: int):
+async def get_beatmap(beatmap_id: int) -> Response:
     osu_api_beatmap = await api.get_beatmap(beatmap_id)
     if osu_api_beatmap is None:
         return Response(status_code=404)
