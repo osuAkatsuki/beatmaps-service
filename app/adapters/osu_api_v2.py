@@ -59,7 +59,6 @@ class BeatmapExtended(Beatmap):
     accuracy: float
     ar: float
     beatmapset_id: int
-    bpm: float | None
     convert: bool
     count_circles: int
     count_sliders: int
@@ -84,14 +83,6 @@ async def get_beatmap(beatmap_id: int) -> BeatmapExtended:
 
 
 class Covers(BaseModel):
-    # cover	string
-    # cover@2x	string
-    # card	string
-    # card@2x	string
-    # list	string
-    # list@2x	string
-    # slimcover	string
-    # slimcover@2x	string
     cover: str
     cover2x: str = Field(alias="cover@2x")
     card: str
@@ -190,5 +181,4 @@ class Beatmapset(BaseModel):
 async def get_beatmapset(beatmapset_id: int) -> Beatmapset:
     response = await http_client.get(f"beatmapsets/{beatmapset_id}")
     response.raise_for_status()
-    xd = response.json()
-    return Beatmapset(**xd)
+    return Beatmapset(**response.json())
