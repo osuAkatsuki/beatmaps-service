@@ -31,6 +31,7 @@ def init_middleware(app: FastAPI) -> FastAPI:
 
 def init_api() -> FastAPI:
     app = FastAPI(
+        openapi_url="/openapi.json" if settings.APP_ENV != "production" else None,
         docs_url="/docs" if settings.APP_ENV != "production" else None,
         redoc_url="/redoc" if settings.APP_ENV != "production" else None,
     )
