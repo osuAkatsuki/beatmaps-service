@@ -15,7 +15,7 @@ from app.api.responses import JSONResponse
 router = APIRouter(tags=["osu! API v2 Mirror"])
 
 
-@router.get("/api/v2/beatmapsets/{beatmapset_id}")
+# @router.get("/api/v2/beatmapsets/{beatmapset_id}")
 async def get_beatmapset(beatmapset_id: int) -> Response:
     osu_api_beatmapset = await api.get_beatmapset(beatmapset_id)
     if osu_api_beatmapset is None:
@@ -24,7 +24,7 @@ async def get_beatmapset(beatmapset_id: int) -> Response:
     return JSONResponse(content=osu_api_beatmapset.model_dump())
 
 
-@router.get("/api/v2/beatmaps/{beatmap_id}")
+# @router.get("/api/v2/beatmaps/{beatmap_id}")
 async def get_beatmap(beatmap_id: int) -> Response:
     osu_api_beatmap = await api.get_beatmap(beatmap_id)
     if osu_api_beatmap is None:
