@@ -1,11 +1,16 @@
 import logging
 from datetime import datetime
+from enum import IntEnum
 
 from fastapi import APIRouter
+from fastapi import Query
 from fastapi import Response
 from pydantic import BaseModel
 
 from app.adapters import osu_api_v2
+from app.adapters.osu_api_v2 import SearchLegacyRankedStatus
+from app.common_models import OsuDirectRankedStatus
+from app.common_models import RankedStatus
 
 router = APIRouter()
 
@@ -73,7 +78,7 @@ class CheesegullBeatmapset(BaseModel):
     @classmethod
     def from_osu_api_beatmapset(
         cls,
-        osu_api_beatmapset: osu_api_v2.Beatmapset,
+        osu_api_beatmapset: osu_api_v2.BeatmapsetExtended,
     ) -> "CheesegullBeatmapset":
         children_beatmaps: list[CheesegullBeatmap] = []
         for osu_api_beatmap in osu_api_beatmapset.beatmaps or []:
@@ -135,3 +140,54 @@ async def cheesegull_beatmapset(beatmapset_id: int):
         extra={"beatmapset_id": beatmapset_id},
     )
     return cheesegull_beatmapset.model_dump()
+
+
+class CheesegullRankedStatus(IntEnum):
+    PENDING = 0
+    RANKED = 2
+    APPROVED = 3
+    QUALIFIED = 4
+    LOVED = 5
+
+
+def get_osu_api_v2_search_ranked_status(
+    cheesegull_status: CheesegullRankedStatus,
+) -> SearchLegacyRankedStatus | None:
+    ranked_status = RankedStatus(cheesegull_status)
+    search_ranked_status = SearchLegacyRankedStatus.from_osu_api_status(ranked_status)
+    return search_ranked_status
+
+
+@router.get("/api/v1/cheesegull/search")
+async def cheesegull_search(
+    query: str,
+    status: CheesegullRankedStatus,
+    mode: osu_api_v2.GameMode,
+    page: int = 1,
+    page_size: int = Query(100, le=500),  # TODO: verify osu! api max
+    # TODO: auth, or at least per-ip ratelimit
+):
+    ranked_status = get_osu_api_v2_search_ranked_status(status)
+    if ranked_status is None:
+        return Response(status_code=400)
+
+    osu_api_search_response = await osu_api_v2.search_beatmapsets(
+        query=query,
+        ranked_status=ranked_status,
+        mode=mode,
+        page=page,
+        page_size=page_size,
+    )
+    cheesegull_beatmapsets = [
+        CheesegullBeatmapset.from_osu_api_beatmapset(osu_api_beatmapset)
+        for osu_api_beatmapset in osu_api_search_response.beatmapsets
+    ]
+    logging.info(
+        "Serving cheesegull search",
+        extra={
+            "query": query,
+            "page": page,
+            "results_count": len(cheesegull_beatmapsets),
+        },
+    )
+    return [beatmapset.model_dump() for beatmapset in cheesegull_beatmapsets]

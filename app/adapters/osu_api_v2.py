@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 from datetime import timezone
+from enum import IntEnum
 from enum import StrEnum
 from typing import Any
 
@@ -10,6 +11,8 @@ from pydantic import Field
 
 from app import oauth
 from app import settings
+from app.common_models import GameMode
+from app.common_models import RankedStatus
 
 OSU_API_V2_TOKEN_ENDPOINT = "https://osu.ppy.sh/oauth/token"
 
@@ -81,7 +84,7 @@ class Beatmap(BaseModel):
     # beatmapset: Beatmapset | BeatmapsetExtended | None
 
     checksum: str | None
-    failtimes: Failtimes
+    failtimes: Failtimes | None = None
     max_combo: int | None = None
     bpm: float
 
@@ -103,7 +106,7 @@ class BeatmapExtended(Beatmap):
     mode_int: int
     passcount: int
     playcount: int
-    ranked: int  # TODO: enum?
+    ranked: int  # TODO: enum
     url: str
 
 
@@ -186,6 +189,8 @@ class Beatmapset(BaseModel):
     user_id: int
     video: bool
 
+
+class BeatmapsetExtended(Beatmapset):
     bpm: float | None
     can_be_hyped: bool
     deleted_at: datetime | None
@@ -204,24 +209,24 @@ class Beatmapset(BaseModel):
     availability: Availability
 
     beatmaps: list[BeatmapExtended] | None
-    converts: list[BeatmapExtended]
-    current_nominations: list[Any] | None
+    converts: list[BeatmapExtended] | None = None
+    current_nominations: list[Any] | None = None
     current_user_attributes: Any | None = None  # TODO
-    description: Description
+    description: Description | None = None
     discussions: Any = None  # TODO
     events: Any | None = None  # TODO
     genre: Genre | None = None
     has_favourited: Any = None  # TODO
-    language: Language | None = None  # TODO
+    language: Language | None = None
     pack_tags: list[str] | None
-    ratings: Any  # TODO
-    recent_favourites: Any  # TODO
-    related_users: Any  # TODO
-    user: Any  # TODO
+    ratings: Any | None = None  # TODO
+    recent_favourites: Any | None = None  # TODO
+    related_users: Any | None = None  # TODO
+    user: Any | None = None  # TODO
     track_id: int | None
 
 
-async def get_beatmapset(beatmapset_id: int) -> Beatmapset | None:
+async def get_beatmapset(beatmapset_id: int) -> BeatmapsetExtended | None:
     osu_api_response_data: dict[str, Any] | None = None
     try:
         response = await osu_api_v2_http_client.get(f"beatmapsets/{beatmapset_id}")
@@ -230,10 +235,93 @@ async def get_beatmapset(beatmapset_id: int) -> Beatmapset | None:
         response.raise_for_status()
         osu_api_response_data = response.json()
         assert osu_api_response_data is not None
-        return Beatmapset(**osu_api_response_data)
+        return BeatmapsetExtended(**osu_api_response_data)
     except Exception:
         logging.exception(
             "Failed to fetch beatmapset from osu! API",
+            extra={"osu_api_response_data": osu_api_response_data},
+        )
+        raise
+
+
+class Cursor(BaseModel):
+    approved_date: int | None = None
+    score: float | None = Field(alias="_score")
+    id: int
+
+
+class Search(BaseModel):
+    sort: str  # TODO: enum
+
+
+class BeatmapsetSearchResponse(BaseModel):
+    beatmapsets: list[BeatmapsetExtended]
+    cursor: Cursor
+    cursor_string: str
+    error: Any | None
+    recommended_difficulty: float | None
+    search: Search
+    total: int
+
+
+class SearchLegacyRankedStatus(IntEnum):
+    RANKED = 0
+    FAVOURITES = 2
+    QUALIFIED = 3
+    PENDING = 4
+    GRAVEYARD = 5
+    MINE = 6
+    ANY = 7
+    LOVED = 8
+
+    @classmethod
+    def from_osu_api_status(
+        cls,
+        osu_api_status: RankedStatus,
+    ) -> "SearchLegacyRankedStatus | None":
+        return {
+            RankedStatus.NOT_SUBMITTED: None,
+            RankedStatus.PENDING: SearchLegacyRankedStatus.PENDING,
+            RankedStatus.UPDATE_AVAILABLE: None,
+            RankedStatus.RANKED: SearchLegacyRankedStatus.RANKED,
+            RankedStatus.APPROVED: SearchLegacyRankedStatus.RANKED,
+            RankedStatus.QUALIFIED: SearchLegacyRankedStatus.QUALIFIED,
+            RankedStatus.LOVED: SearchLegacyRankedStatus.LOVED,
+        }.get(osu_api_status)
+
+
+async def search_beatmapsets(
+    query: str,
+    *,
+    ranked_status: SearchLegacyRankedStatus,
+    mode: GameMode,
+    page: int,
+    page_size: int,
+    cursor_string: str | None = None,
+) -> BeatmapsetSearchResponse:
+    # TODO: support more parameters. Here is a sample query:
+    # https://osu.ppy.sh/beatmapsets/search?e=&c=&g=&l=&m=&nsfw=&played=&q=&r=&sort=&s=&cursor_string=eyJhcHByb3ZlZF9kYXRlIjoxNzE4ODQ3Nzk0MDAwLCJpZCI6MjEzNDYyNX0
+
+    osu_api_response_data: dict[str, Any] | None = None
+    try:
+        response = await osu_api_v2_http_client.get(
+            "beatmapsets/search",
+            params={
+                "q": query,
+                "m": mode,
+                "r": ranked_status,
+                "page": page,
+                "limit": page_size,
+                "cursor_string": cursor_string,
+            },
+        )
+        response.raise_for_status()
+        osu_api_response_data = response.json()
+        assert osu_api_response_data is not None
+        return BeatmapsetSearchResponse(**osu_api_response_data)
+    except Exception:
+        logging.exception(
+            "Failed to fetch beatmapsets from osu! API",
             extra={"osu_api_response_data": osu_api_response_data},
         )
         raise
