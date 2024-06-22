@@ -316,7 +316,7 @@ class Category(IntEnum):
     LOVED = 8
 
     @classmethod
-    def from_osu_api_status(
+    def from_ranked_status(
         cls,
         osu_api_status: RankedStatus,
     ) -> "Category | None":

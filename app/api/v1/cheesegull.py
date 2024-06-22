@@ -152,17 +152,17 @@ async def cheesegull_beatmapset(beatmapset_id: int):
 
 class CheesegullRankedStatus(IntEnum):
     PENDING = 0
-    RANKED = 2
-    APPROVED = 3
-    QUALIFIED = 4
-    LOVED = 5
+    RANKED = 1
+    APPROVED = 2
+    QUALIFIED = 3
+    LOVED = 4
 
 
 def get_osu_api_v2_search_ranked_status(
     cheesegull_status: CheesegullRankedStatus,
 ) -> Category | None:
-    ranked_status = RankedStatus(cheesegull_status)
-    search_ranked_status = Category.from_osu_api_status(ranked_status)
+    ranked_status = RankedStatus.from_osu_api(cheesegull_status)
+    search_ranked_status = Category.from_ranked_status(ranked_status)
     return search_ranked_status
 
 
@@ -171,7 +171,7 @@ async def cheesegull_search(
     query: str,
     status: CheesegullRankedStatus | None = None,
     mode: osu_api_v2.GameMode | None = None,
-    offset: int = 1,
+    offset: int = 0,
     amount: int = Query(50, ge=1, le=100),
     # TODO: auth, or at least per-ip ratelimit
 ):
