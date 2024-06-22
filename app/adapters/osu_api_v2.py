@@ -52,7 +52,7 @@ class Beatmap(BaseModel):
     checksum: str | None
     failtimes: Failtimes
     max_combo: int | None = None
-    bpm: int
+    bpm: float
 
 
 class BeatmapExtended(Beatmap):
@@ -102,7 +102,7 @@ class RequiredMeta(BaseModel):
 
 class NominationsSummary(BaseModel):
     current: int
-    eligible_main_rulesets: list[Ruleset]
+    eligible_main_rulesets: list[Ruleset] | None = None
     required_meta: RequiredMeta
 
 
@@ -145,7 +145,7 @@ class Beatmapset(BaseModel):
     user_id: int
     video: bool
 
-    bpm: int | None
+    bpm: float | None
     can_be_hyped: bool
     deleted_at: datetime | None
     discussion_enabled: bool
