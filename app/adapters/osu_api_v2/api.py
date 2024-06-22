@@ -1,6 +1,4 @@
 import logging
-from datetime import datetime
-from datetime import timezone
 from typing import Any
 
 import httpx
@@ -21,41 +19,17 @@ from app.common_models import GameMode
 OSU_API_V2_TOKEN_ENDPOINT = "https://osu.ppy.sh/oauth/token"
 
 
-async def log_osu_api_response(response: httpx.Response) -> None:
-    if response.request.url == OSU_API_V2_TOKEN_ENDPOINT or response.status_code == 401:
-        return None
-
-    # TODO: Migrate to or add statsd metric to count overall number of
-    #       authorized requests to the osu! api, so we can understand
-    #       our overall request count and frequency.
-    logging.info(
-        "Made authorized request to osu! api",
-        extra={
-            "request_url": response.request.url,
-            "ratelimit": {
-                "remaining": response.headers.get("X-Ratelimit-Remaining"),
-                "limit": response.headers.get("X-Ratelimit-Limit"),
-                "reset_utc": (
-                    # they don't send a header, but reset on the minute
-                    datetime.now(tz=timezone.utc)
-                    .replace(second=0, microsecond=0)
-                    .isoformat()
-                ),
-            },
-        },
-    )
-    return None
-
-
 osu_api_v2_http_client = httpx.AsyncClient(
     base_url="https://osu.ppy.sh/api/v2/",
     auth=oauth.AsyncOAuth(
-        client_id=settings.OSU_API_V2_CLIENT_ID,
-        client_secret=settings.OSU_API_V2_CLIENT_SECRET,
+        client_credential_sets=[
+            oauth.OAuthClientCredentials(
+                client_id=settings.OSU_API_V2_CLIENT_ID,
+                client_secret=settings.OSU_API_V2_CLIENT_SECRET,
+            ),
+        ],
         token_endpoint=OSU_API_V2_TOKEN_ENDPOINT,
     ),
-    event_hooks={"response": [log_osu_api_response]},
-    timeout=5.0,
 )
 
 

@@ -1,43 +1,47 @@
+import logging
+import random
 from collections.abc import AsyncGenerator
 from collections.abc import Generator
 from typing import Any
 
 import httpx
+from pydantic import BaseModel
+
+
+class OAuthClientCredentials(BaseModel):
+    client_id: str
+    client_secret: str
+
+    access_token: str | None = None
 
 
 class AsyncOAuth(httpx.Auth):
     def __init__(
         self,
-        client_id: str,
-        client_secret: str,
+        client_credential_sets: list[OAuthClientCredentials],
         token_endpoint: str,
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        self.client_id = client_id
-        self.client_secret = client_secret
+        self.client_credential_sets = client_credential_sets
         self.token_endpoint = token_endpoint
-
-        self.access_token: str | None = None
 
         super().__init__(*args, **kwargs)
 
-    def build_refresh_request(self) -> httpx.Request:
+    def build_refresh_request(
+        self,
+        client_credentials: OAuthClientCredentials,
+    ) -> httpx.Request:
         return httpx.Request(
             "POST",
             self.token_endpoint,
             data={
-                "client_id": self.client_id,
-                "client_secret": self.client_secret,
+                "client_id": client_credentials.client_id,
+                "client_secret": client_credentials.client_secret,
                 "grant_type": "client_credentials",
                 "scope": "public",
             },
         )
-
-    def update_tokens(self, response: httpx.Response) -> None:
-        response.raise_for_status()
-        data = response.json()
-        self.access_token = data["access_token"]
 
     def sync_auth_flow(
         self,
@@ -54,18 +58,35 @@ class AsyncOAuth(httpx.Auth):
         if self.requires_request_body:
             await request.aread()
 
-        if self.access_token is None:
-            refresh_response = yield self.build_refresh_request()
-            await refresh_response.aread()
-            self.update_tokens(refresh_response)
+        client_credentials = random.choice(self.client_credential_sets)
 
-        request.headers["Authorization"] = f"Bearer {self.access_token}"
+        if client_credentials.access_token is None:
+            refresh_response = yield self.build_refresh_request(client_credentials)
+            await refresh_response.aread()
+            client_credentials.access_token = refresh_response.json()["access_token"]
+
+        request.headers["Authorization"] = f"Bearer {client_credentials.access_token}"
         response = yield request
 
         while response.status_code == 401:
-            refresh_response = yield self.build_refresh_request()
+            refresh_response = yield self.build_refresh_request(client_credentials)
             await refresh_response.aread()
-            self.update_tokens(refresh_response)
+            client_credentials.access_token = refresh_response.json()["access_token"]
 
-            request.headers["Authorization"] = f"Bearer {self.access_token}"
+            request.headers["Authorization"] = (
+                f"Bearer {client_credentials.access_token}"
+            )
             response = yield request
+
+        logging.info(
+            "Made oauth-authorized request",
+            extra={
+                "request_url": request.url._uri_reference._asdict(),
+                "ratelimit": {
+                    "remaining": response.headers.get("X-Ratelimit-Remaining"),
+                    "limit": response.headers.get("X-Ratelimit-Limit"),
+                    "reset_utc": response.headers.get("X-Ratelimit-Reset"),
+                },
+                "client_credentials": {"client_id": client_credentials.client_id},
+            },
+        )
