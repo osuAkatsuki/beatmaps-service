@@ -136,7 +136,7 @@ async def cheesegull_beatmap(
         return Response(status_code=404)
 
     cheesegull_beatmap = CheesegullBeatmap.from_osu_api_beatmap(osu_api_beatmap)
-    logging.info(
+    logging.debug(
         "Serving cheesegull beatmap",
         extra={
             "beatmap_id": beatmap_id,
@@ -160,7 +160,7 @@ async def cheesegull_beatmapset(
     cheesegull_beatmapset = CheesegullBeatmapset.from_osu_api_beatmapset(
         osu_api_beatmapset,
     )
-    logging.info(
+    logging.debug(
         "Serving cheesegull beatmapset",
         extra={
             "beatmapset_id": beatmapset_id,
@@ -228,7 +228,7 @@ async def cheesegull_search(
         page += 1
         num_fetched += len(osu_api_search_response.beatmapsets)
 
-    logging.info(
+    logging.debug(
         "Serving cheesegull search",
         extra={
             "query": query,
