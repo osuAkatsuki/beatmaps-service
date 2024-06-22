@@ -217,7 +217,6 @@ async def cheesegull_search(
             page=page,
         )
         if not osu_api_search_response.beatmapsets:
-            logging.info("Break test")
             break
         cheesegull_beatmapsets.extend(
             [
