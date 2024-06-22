@@ -3,12 +3,16 @@ import logging
 import random
 import time
 
+from pydantic import BaseModel
+
 from app.adapters.beatmap_mirrors import BeatmapMirror
-from app.adapters.beatmap_mirrors.gatari import GatariMirror
-from app.adapters.beatmap_mirrors.mino import MinoMirror
+
 from app.adapters.beatmap_mirrors.nerinyan import NerinyanMirror
 from app.adapters.beatmap_mirrors.osu_direct import OsuDirectMirror
-from app.adapters.beatmap_mirrors.ripple import RippleMirror
+
+# from app.adapters.beatmap_mirrors.gatari import GatariMirror
+# from app.adapters.beatmap_mirrors.mino import MinoMirror
+# from app.adapters.beatmap_mirrors.ripple import RippleMirror
 
 BEATMAP_MIRRORS: list[BeatmapMirror] = [
     # GatariMirror(),
@@ -35,6 +39,18 @@ class TimedOut: ...
 TIMED_OUT = TimedOut()
 
 
+class BeatmapMirrorRequest(BaseModel):
+    request_url: str
+    api_key_id: str | None
+    mirror_name: str
+    success: bool
+    started_at: float
+    ended_at: float
+    response_code: int | None
+    response_size: int | None
+    response_error: str | None
+
+
 async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
     """\
     Parallelize calls with a timeout across up to 5 mirrors at time,
@@ -47,44 +63,30 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
     #       started streaming, rather than after the response has
     #       been read in full.
 
-    concurrency_limit = 5
-    global_timeout = 15
-    semaphore = asyncio.Semaphore(concurrency_limit)
-
     start_time = time.time()
+    for mirror in BEATMAP_MIRRORS:
+        try:
+            result = await mirror.fetch_beatmap_zip_data(beatmapset_id)
+        except Exception:
+            # TODO: log failure to `beatmap_mirror_requests` table
+            logging.warning(
+                "Failed to fetch beatmap from mirror",
+                exc_info=True,
+                extra={"mirror": mirror.name},
+            )
+            continue
+        else:
+            break
+    else:
+        return TIMED_OUT
 
-    # TODO: prioritization based on reliability, speed, etc.
-    random.shuffle(BEATMAP_MIRRORS)
-
-    coroutines = [
-        asyncio.create_task(
-            run_with_semaphore(
-                semaphore,
-                mirror,
-                beatmapset_id,
-            ),
-        )
-        for mirror in BEATMAP_MIRRORS
-    ]
-    try:
-        done, pending = await asyncio.wait(
-            coroutines,
-            return_when=asyncio.FIRST_COMPLETED,
-            timeout=global_timeout,
-        )
-        for task in pending:
-            task.cancel()
-        first_result = await list(done)[0]
-    except TimeoutError:
-        return None
-
-    # TODO: log which mirrors finished, and which timed out
-
-    mirror, result = first_result
     if result is None:
         return None
 
+    # TODO: log success to `beatmap_mirror_requests` table
+
     end_time = time.time()
+
     ms_elapsed = (end_time - start_time) * 1000
 
     logging.info(
