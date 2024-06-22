@@ -1,10 +1,8 @@
 import logging
-
 from datetime import datetime
 from datetime import timedelta
 
 from app.adapters.beatmap_mirrors import BeatmapMirror
-
 from app.adapters.beatmap_mirrors.nerinyan import NerinyanMirror
 from app.adapters.beatmap_mirrors.osu_direct import OsuDirectMirror
 from app.repositories import beatmap_mirror_requests
@@ -37,6 +35,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
     """
     started_at = datetime.now()
 
+    # TODO: refactor to dynamically weighted round robin
     for beatmap_mirror in BEATMAP_MIRRORS:
         if beatmap_mirror.score_last_updated_at < (
             datetime.now() - timedelta(minutes=5)
