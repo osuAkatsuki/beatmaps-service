@@ -93,6 +93,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
             "mirror_name": mirror.name,
             "beatmapset_id": beatmapset_id,
             "ms_elapsed": ms_elapsed,
+            "data_size": len(result),
         },
     )
     return result
