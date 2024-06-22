@@ -17,7 +17,8 @@ BEATMAP_MIRRORS: list[BeatmapMirror] = [
     MinoMirror(),
     NerinyanMirror(),
     OsuDirectMirror(),
-    RippleMirror(),
+    # Disabled as ripple only supports ranked maps
+    # RippleMirror(),
 ]
 
 
