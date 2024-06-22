@@ -1,7 +1,6 @@
 import logging
 import random
 from datetime import datetime
-from datetime import timedelta
 
 from app.adapters.beatmap_mirrors.nerinyan import NerinyanMirror
 from app.adapters.beatmap_mirrors.osu_direct import OsuDirectMirror
@@ -26,13 +25,7 @@ BEATMAP_SELECTOR = DynamicWeightedRoundRobin(
 )
 
 
-class TimedOut: ...
-
-
-TIMED_OUT = TimedOut()
-
-
-async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
+async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
     """\
     Fetch a beatmapset .osz2 file by any means necessary, balancing upon
     multiple underlying beatmap mirrors to ensure the best possible
