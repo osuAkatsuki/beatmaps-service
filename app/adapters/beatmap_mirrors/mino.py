@@ -4,6 +4,7 @@ from app.adapters.beatmap_mirrors import BeatmapMirror
 
 
 class MinoMirror(BeatmapMirror):
+    name = "mino"
     base_url = "https://catboy.best"
 
     async def fetch_beatmap_zip_data(self, beatmapset_id: int) -> bytes | None:

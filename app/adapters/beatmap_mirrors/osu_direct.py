@@ -4,6 +4,7 @@ from app.adapters.beatmap_mirrors import BeatmapMirror
 
 
 class OsuDirectMirror(BeatmapMirror):
+    name = "osu_direct"
     base_url = "https://api.osu.direct"
 
     async def fetch_beatmap_zip_data(self, beatmapset_id: int) -> bytes | None:
