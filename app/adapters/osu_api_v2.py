@@ -13,14 +13,19 @@ from app import settings
 OSU_API_V2_TOKEN_ENDPOINT = "https://osu.ppy.sh/oauth/token"
 
 
-async def log_osu_api_request(request: httpx.Request) -> None:
-    if request.url == OSU_API_V2_TOKEN_ENDPOINT:
+async def log_osu_api_response(response: httpx.Response) -> None:
+    if response.request.url == OSU_API_V2_TOKEN_ENDPOINT or response.status_code == 401:
         return None
 
-    # TODO: migrate this to use statsd
+    # TODO: Migrate to or add statsd metric to count overall number of
+    #       authorized requests to the osu! api, so we can understand
+    #       our overall request count and frequency.
     logging.info(
-        "Making authorized request to osu! api",
-        extra={"request_url": request.url},
+        "Made authorized request to osu! api",
+        extra={
+            "request_url": response.request.url,
+            "ratelimit_remaining": response.headers.get("X-Ratelimit-Remaining"),
+        },
     )
     return None
 
@@ -32,7 +37,7 @@ osu_api_v2_http_client = httpx.AsyncClient(
         client_secret=settings.OSU_API_V2_CLIENT_SECRET,
         token_endpoint=OSU_API_V2_TOKEN_ENDPOINT,
     ),
-    event_hooks={"request": [log_osu_api_request]},
+    event_hooks={"response": [log_osu_api_response]},
     timeout=5.0,
 )
 
