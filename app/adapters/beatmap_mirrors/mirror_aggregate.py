@@ -94,11 +94,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
             "beatmapset_id": beatmapset_id,
             "ms_elapsed": ms_elapsed,
             "data_size": len(result),
-            "bad_data": (
-                result
-                if len(result) < (20000 if mirror.name == "mino" else 500)
-                else None
-            ),
+            "bad_data": result if not result.startswith(b"PK\x03\x04") else None,
         },
     )
     return result
