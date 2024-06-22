@@ -183,18 +183,25 @@ async def cheesegull_search(
     else:
         ranked_status = None
 
+    num_fetched = 0
+    cheesegull_beatmapsets: list[CheesegullBeatmapset] = []
     page = offset // (amount + 1)
+    while num_fetched < amount:
+        osu_api_search_response = await osu_api_v2.search_beatmapsets(
+            query=query,
+            mode=mode,
+            category=ranked_status,
+            page=page,
+        )
+        cheesegull_beatmapsets.extend(
+            [
+                CheesegullBeatmapset.from_osu_api_beatmapset(osu_api_beatmapset)
+                for osu_api_beatmapset in osu_api_search_response.beatmapsets
+            ],
+        )
+        page += 1
+        num_fetched += len(osu_api_search_response.beatmapsets)
 
-    osu_api_search_response = await osu_api_v2.search_beatmapsets(
-        query=query,
-        mode=mode,
-        category=ranked_status,
-        page=page,
-    )
-    cheesegull_beatmapsets = [
-        CheesegullBeatmapset.from_osu_api_beatmapset(osu_api_beatmapset)
-        for osu_api_beatmapset in osu_api_search_response.beatmapsets
-    ]
     logging.info(
         "Serving cheesegull search",
         extra={
