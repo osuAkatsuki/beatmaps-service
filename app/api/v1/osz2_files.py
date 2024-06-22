@@ -3,7 +3,7 @@ from fastapi import Response
 
 from app.adapters.beatmap_mirrors import mirror_aggregate
 
-router = APIRouter()
+router = APIRouter(tags=["osz2 Files"])
 
 
 @router.get("/api/d/{beatmapset_id}")

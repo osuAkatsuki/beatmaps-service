@@ -12,7 +12,7 @@ from fastapi import Response
 from app.adapters.osu_api_v2 import api
 from app.api.responses import JSONResponse
 
-router = APIRouter()
+router = APIRouter(tags=["osu! API v2 Mirror"])
 
 
 @router.get("/api/v2/beatmapsets/{beatmapset_id}")
