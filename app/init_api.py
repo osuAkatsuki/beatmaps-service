@@ -5,6 +5,7 @@ from fastapi import Request
 from fastapi import Response
 from starlette.middleware.base import RequestResponseEndpoint
 
+from app import settings
 from app.api import api_router
 
 
@@ -29,7 +30,10 @@ def init_middleware(app: FastAPI) -> FastAPI:
 
 
 def init_api() -> FastAPI:
-    app = FastAPI()
+    app = FastAPI(
+        docs_url="/docs" if settings.APP_ENV != "production" else None,
+        redoc_url="/redoc" if settings.APP_ENV != "production" else None,
+    )
     app = init_routes(app)
     app = init_middleware(app)
     return app
