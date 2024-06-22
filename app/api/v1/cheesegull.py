@@ -151,6 +151,7 @@ async def cheesegull_beatmapset(beatmapset_id: int):
 
 
 class CheesegullRankedStatus(IntEnum):
+    # This is a limited subset of the osu! api ranked status
     PENDING = 0
     RANKED = 1
     APPROVED = 2
@@ -168,7 +169,7 @@ def get_osu_api_v2_search_ranked_status(
 
 @router.get("/api/search")
 async def cheesegull_search(
-    query: str,
+    query: str = "",
     status: CheesegullRankedStatus | None = None,
     mode: osu_api_v2.GameMode | None = None,
     offset: int = 0,
