@@ -55,9 +55,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
                 success=False,
                 started_at=started_at,
                 ended_at=ended_at,
-                response_size=(
-                    len(beatmap_zip_data) if beatmap_zip_data is not None else 0
-                ),
+                response_size=len(beatmap_zip_data) if beatmap_zip_data else 0,
                 response_error=str(exc),
             )
             await BEATMAP_SELECTOR.update_all_mirror_and_selector_weights()
@@ -83,7 +81,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
         success=True,
         started_at=started_at,
         ended_at=ended_at,
-        response_size=(len(beatmap_zip_data) if beatmap_zip_data is not None else 0),
+        response_size=len(beatmap_zip_data) if beatmap_zip_data else 0,
         response_error=None,
     )
     await BEATMAP_SELECTOR.update_all_mirror_and_selector_weights()

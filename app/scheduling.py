@@ -1,18 +1,11 @@
 import math
-from typing import Any
 
 from app.adapters.beatmap_mirrors import BeatmapMirror
 from app.repositories import beatmap_mirror_requests
 
 
 class DynamicWeightedRoundRobin:
-    def __init__(
-        self,
-        mirrors: list[BeatmapMirror],
-        *args: Any,
-        **kwargs: Any,
-    ) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self, mirrors: list[BeatmapMirror]) -> None:
         self.mirrors = mirrors
         self.index = -1
         self.current_weight = 0
