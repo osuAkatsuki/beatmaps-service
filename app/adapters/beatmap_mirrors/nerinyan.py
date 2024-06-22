@@ -4,6 +4,7 @@ from app.adapters.beatmap_mirrors import BeatmapMirror
 
 
 class NerinyanMirror(BeatmapMirror):
+    name = "nerinyan"
     base_url = "https://api.nerinyan.moe"
 
     async def fetch_beatmap_zip_data(self, beatmapset_id: int) -> bytes | None:
