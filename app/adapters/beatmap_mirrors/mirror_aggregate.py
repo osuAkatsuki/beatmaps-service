@@ -77,7 +77,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
     ms_elapsed = (end_time - start_time) * 1000
 
     logging.info(
-        f"{mirror.name} was the first to finish in {ms_elapsed:.2f}ms",
+        "A mirror was first to finish during .osz2 aggregate request",
         extra={
             "mirror_name": mirror.name,
             "beatmapset_id": beatmapset_id,
