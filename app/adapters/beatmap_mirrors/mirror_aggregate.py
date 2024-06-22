@@ -41,12 +41,8 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
     await BEATMAP_SELECTOR.update_all_mirror_and_selector_weights()
 
     while (mirror := BEATMAP_SELECTOR.select_mirror()) is not None:
-        print("Going with", mirror.name)
         try:
-            if random.random() < 0.1:
-                raise ValueError("FAAK")
-            result = b""
-            # result = await mirror.fetch_beatmap_zip_data(beatmapset_id)
+            result = await mirror.fetch_beatmap_zip_data(beatmapset_id)
         except Exception as exc:
             ended_at = datetime.now()
             await beatmap_mirror_requests.create(
@@ -78,7 +74,6 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
         return None
 
     ended_at = datetime.now()
-    started_at = ended_at - timedelta(seconds=random.uniform(0.300, 0.700))  # TODO
 
     await beatmap_mirror_requests.create(
         request=beatmap_mirror_requests.BeatmapMirrorRequest(
