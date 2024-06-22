@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from datetime import timezone
 from enum import StrEnum
 from typing import Any
 
@@ -24,7 +25,16 @@ async def log_osu_api_response(response: httpx.Response) -> None:
         "Made authorized request to osu! api",
         extra={
             "request_url": response.request.url,
-            "ratelimit_remaining": response.headers.get("X-Ratelimit-Remaining"),
+            "ratelimit": {
+                "remaining": response.headers.get("X-Ratelimit-Remaining"),
+                "limit": response.headers.get("X-Ratelimit-Limit"),
+                "reset_utc": (
+                    # they don't send a header, but reset on the minute
+                    datetime.now(tz=timezone.utc)
+                    .replace(second=0, microsecond=0)
+                    .isoformat()
+                ),
+            },
         },
     )
     return None
