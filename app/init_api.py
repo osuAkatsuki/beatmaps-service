@@ -34,6 +34,7 @@ def init_api() -> FastAPI:
         openapi_url="/openapi.json" if settings.APP_ENV != "production" else None,
         docs_url="/docs" if settings.APP_ENV != "production" else None,
         redoc_url="/redoc" if settings.APP_ENV != "production" else None,
+        swagger_ui_oauth2_redirect_url=None,
     )
     app = init_routes(app)
     app = init_middleware(app)
