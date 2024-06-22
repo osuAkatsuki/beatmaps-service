@@ -103,6 +103,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
         "Served beatmapset osz2 from mirror",
         extra={
             "mirror_name": mirror.name,
+            "mirror_weight": mirror.weight,
             "beatmapset_id": beatmapset_id,
             "ms_elapsed": ms_elapsed,
             "data_size": (
