@@ -1,6 +1,5 @@
 from abc import ABC
 from abc import abstractmethod
-from datetime import datetime
 from typing import Any
 from typing import ClassVar
 
@@ -13,8 +12,7 @@ class BeatmapMirror(ABC):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.http_client = httpx.AsyncClient()
-        self.score = 0.0
-        self.score_last_updated_at = datetime.min
+        self.weight = 0
         super().__init__(*args, **kwargs)
 
     @abstractmethod

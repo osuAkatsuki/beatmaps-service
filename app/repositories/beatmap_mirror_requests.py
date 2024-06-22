@@ -1,3 +1,4 @@
+import math
 from datetime import datetime
 
 from pydantic import BaseModel
@@ -21,52 +22,48 @@ class BeatmapMirrorScore(BaseModel):
     score: float
 
 
-TARGET_LATENCY_MS = 500
+async def get_mirror_weight(mirror_name: str) -> int:
+    """Give the mirror a weighting based on its latency and failure rate."""
+    p90_success_ms_latency = await state.database.fetch_val(
+        """\
+        WITH request_latencies AS (
+            SELECT (ended_at - started_at) * 1000 AS ms_elapsed,
+            PERCENT_RANK() OVER (ORDER BY ended_at - started_at) p
+            FROM beatmap_mirror_requests
+            WHERE started_at > NOW() - INTERVAL 1 HOUR
+            AND mirror_name = :mirror_name
+            AND success = 1
+        )
+        SELECT DISTINCT first_value(ms_elapsed) OVER (
+            ORDER BY CASE WHEN p <= 0.9 THEN p END DESC
+        ) p90_success_ms_latency
+        FROM request_latencies
+        """,
+        {"mirror_name": mirror_name},
+    )
+    if p90_success_ms_latency is None:
+        return 1
 
-
-async def get_mirror_score(mirror_name: str) -> float:
-    """Get a score for a mirror based on recent requests. Higher is better."""
-    query = """\
-        SELECT success, started_at, ended_at
+    failure_rate = await state.database.fetch_val(
+        """\
+        SELECT AVG(success = 0)
         FROM beatmap_mirror_requests
         WHERE started_at > NOW() - INTERVAL 1 HOUR
         AND mirror_name = :mirror_name
-        ORDER BY started_at DESC
-    """
-    mirror_requests = [
-        BeatmapMirrorRequest(**dict(rec._mapping))
-        for rec in await state.database.fetch_all(
-            query=query,
-            values={"mirror_name": mirror_name},
-        )
-    ]
-    if not mirror_requests:
-        return 0
+        """,
+        {"mirror_name": mirror_name},
+    )
+    if failure_rate is None:
+        return 1
 
-    score = 0
-    for mirror_request in mirror_requests:
-        if mirror_request.success:
-            # successes are good, especially if they're fast
-            # 0-1 depending on latency vs. target latency
-            score += (
-                1
-                - (
-                    (
-                        mirror_request.ended_at - mirror_request.started_at
-                    ).total_seconds()
-                    * 1000
-                )
-                / TARGET_LATENCY_MS
-            )
-
-        else:
-            # failures are very bad
-            score -= 10
-
-    return score
+    # https://www.desmos.com/calculator/0am8xnwxyo
+    latency_weight = 1000 / math.log(p90_success_ms_latency)
+    failure_weight = math.exp(-10 * failure_rate)
+    weight = max(1, int(latency_weight * failure_weight))
+    return weight
 
 
-async def log_beatmap_mirror_request(request: BeatmapMirrorRequest) -> None:
+async def create(request: BeatmapMirrorRequest) -> None:
     query = """\
         INSERT INTO beatmap_mirror_requests (
             request_url, api_key_id, mirror_name, success, started_at,

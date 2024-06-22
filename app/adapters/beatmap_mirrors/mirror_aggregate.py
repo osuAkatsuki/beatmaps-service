@@ -1,24 +1,27 @@
 import logging
+import random
 from datetime import datetime
 from datetime import timedelta
 
-from app.adapters.beatmap_mirrors import BeatmapMirror
 from app.adapters.beatmap_mirrors.nerinyan import NerinyanMirror
 from app.adapters.beatmap_mirrors.osu_direct import OsuDirectMirror
 from app.repositories import beatmap_mirror_requests
+from app.scheduling import DynamicWeightedRoundRobin
 
 # from app.adapters.beatmap_mirrors.gatari import GatariMirror
 # from app.adapters.beatmap_mirrors.mino import MinoMirror
 # from app.adapters.beatmap_mirrors.ripple import RippleMirror
 
-BEATMAP_MIRRORS: list[BeatmapMirror] = [
-    # GatariMirror(),
-    # MinoMirror(),
-    NerinyanMirror(),
-    OsuDirectMirror(),
-    # Disabled as ripple only supports ranked maps
-    # RippleMirror(),
-]
+BEATMAP_SELECTOR = DynamicWeightedRoundRobin(
+    mirrors=[
+        # GatariMirror(),
+        # MinoMirror(),
+        NerinyanMirror(),
+        OsuDirectMirror(),
+        # Disabled as ripple only supports ranked maps
+        # RippleMirror(),
+    ],
+)
 
 
 class TimedOut: ...
@@ -35,28 +38,18 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
     """
     started_at = datetime.now()
 
-    # TODO: refactor to dynamically weighted round robin
-    for beatmap_mirror in BEATMAP_MIRRORS:
-        if beatmap_mirror.score_last_updated_at < (
-            datetime.now() - timedelta(minutes=5)
-        ):
-            beatmap_mirror.score = await beatmap_mirror_requests.get_mirror_score(
-                beatmap_mirror.name,
-            )
-            beatmap_mirror.score_last_updated_at = datetime.now()
+    await BEATMAP_SELECTOR.update_all_mirror_and_selector_weights()
 
-    sorted_mirrors = sorted(
-        BEATMAP_MIRRORS,
-        key=lambda mirror: mirror.score,
-        reverse=True,
-    )
-
-    for mirror in sorted_mirrors:
+    while (mirror := BEATMAP_SELECTOR.select_mirror()) is not None:
+        print("Going with", mirror.name)
         try:
-            result = await mirror.fetch_beatmap_zip_data(beatmapset_id)
+            if random.random() < 0.1:
+                raise ValueError("FAAK")
+            result = b""
+            # result = await mirror.fetch_beatmap_zip_data(beatmapset_id)
         except Exception as exc:
             ended_at = datetime.now()
-            await beatmap_mirror_requests.log_beatmap_mirror_request(
+            await beatmap_mirror_requests.create(
                 request=beatmap_mirror_requests.BeatmapMirrorRequest(
                     request_url=f"{mirror.base_url}/d/{beatmapset_id}",
                     api_key_id=None,
@@ -68,6 +61,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
                     response_error=str(exc),
                 ),
             )
+            await BEATMAP_SELECTOR.update_all_mirror_and_selector_weights()
             logging.warning(
                 "Failed to fetch beatmap from mirror",
                 exc_info=True,
@@ -84,8 +78,9 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
         return None
 
     ended_at = datetime.now()
+    started_at = ended_at - timedelta(seconds=random.uniform(0.300, 0.700))  # TODO
 
-    await beatmap_mirror_requests.log_beatmap_mirror_request(
+    await beatmap_mirror_requests.create(
         request=beatmap_mirror_requests.BeatmapMirrorRequest(
             request_url=f"{mirror.base_url}/d/{beatmapset_id}",
             api_key_id=None,
@@ -97,6 +92,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
             response_error=None,
         ),
     )
+    await BEATMAP_SELECTOR.update_all_mirror_and_selector_weights()
 
     ms_elapsed = (ended_at.timestamp() - started_at.timestamp()) * 1000
 
