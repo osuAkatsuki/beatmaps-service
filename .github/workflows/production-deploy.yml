@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - mirror-prioritization
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
