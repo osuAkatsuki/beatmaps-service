@@ -1,16 +1,22 @@
 import asyncio
 import logging
+import random
 import time
 
 from app.adapters.beatmap_mirrors import BeatmapMirror
+from app.adapters.beatmap_mirrors.gatari import GatariMirror
 from app.adapters.beatmap_mirrors.mino import MinoMirror
 from app.adapters.beatmap_mirrors.nerinyan import NerinyanMirror
 from app.adapters.beatmap_mirrors.osu_direct import OsuDirectMirror
+from app.adapters.beatmap_mirrors.ripple import RippleMirror
 
 BEATMAP_MIRRORS: list[BeatmapMirror] = [
+    GatariMirror(),
     MinoMirror(),
     NerinyanMirror(),
     OsuDirectMirror(),
+    # Disabled as ripple only supports ranked maps
+    # RippleMirror(),
 ]
 
 
@@ -46,6 +52,9 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
     semaphore = asyncio.Semaphore(concurrency_limit)
 
     start_time = time.time()
+
+    # TODO: prioritization based on reliability, speed, etc.
+    random.shuffle(BEATMAP_MIRRORS)
 
     coroutines = [
         asyncio.create_task(
