@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from enum import StrEnum
 from typing import Any
@@ -9,14 +10,29 @@ from pydantic import Field
 from app import oauth
 from app import settings
 
+OSU_API_V2_TOKEN_ENDPOINT = "https://osu.ppy.sh/oauth/token"
+
+
+def log_osu_api_request(request: httpx.Request) -> None:
+    if request.url == OSU_API_V2_TOKEN_ENDPOINT:
+        return None
+
+    # TODO: migrate this to use statsd
+    logging.info(
+        "Making authorized request to osu! api",
+        extra={"request_url": request.url},
+    )
+    return None
+
 
 http_client = httpx.AsyncClient(
     base_url="https://osu.ppy.sh/api/v2/",
     auth=oauth.AsyncOAuth(
         client_id=settings.OSU_API_V2_CLIENT_ID,
         client_secret=settings.OSU_API_V2_CLIENT_SECRET,
-        token_endpoint="https://osu.ppy.sh/oauth/token",
+        token_endpoint=OSU_API_V2_TOKEN_ENDPOINT,
     ),
+    event_hooks={"request": [log_osu_api_request]},
     timeout=5.0,
 )
 
