@@ -1,104 +1,103 @@
-import asyncio
 import logging
 import random
-import time
+from datetime import datetime
 
-from app.adapters.beatmap_mirrors import BeatmapMirror
-from app.adapters.beatmap_mirrors.gatari import GatariMirror
-from app.adapters.beatmap_mirrors.mino import MinoMirror
 from app.adapters.beatmap_mirrors.nerinyan import NerinyanMirror
 from app.adapters.beatmap_mirrors.osu_direct import OsuDirectMirror
-from app.adapters.beatmap_mirrors.ripple import RippleMirror
+from app.repositories import beatmap_mirror_requests
+from app.scheduling import DynamicWeightedRoundRobin
 
-BEATMAP_MIRRORS: list[BeatmapMirror] = [
-    # GatariMirror(),
-    # MinoMirror(),
-    NerinyanMirror(),
-    OsuDirectMirror(),
-    # Disabled as ripple only supports ranked maps
-    # RippleMirror(),
-]
+# from app.adapters.beatmap_mirrors.gatari import GatariMirror
+# from app.adapters.beatmap_mirrors.mino import MinoMirror
+# from app.adapters.beatmap_mirrors.ripple import RippleMirror
 
+ZIP_FILE_HEADER = b"PK\x03\x04"
 
-async def run_with_semaphore(
-    semaphore: asyncio.Semaphore,
-    mirror: BeatmapMirror,
-    beatmapset_id: int,
-) -> tuple[BeatmapMirror, bytes | None]:
-    async with semaphore:
-        return (mirror, await mirror.fetch_beatmap_zip_data(beatmapset_id))
-
-
-class TimedOut: ...
+BEATMAP_SELECTOR = DynamicWeightedRoundRobin(
+    mirrors=[
+        # GatariMirror(),
+        # MinoMirror(),
+        NerinyanMirror(),
+        OsuDirectMirror(),
+        # Disabled as ripple only supports ranked maps
+        # RippleMirror(),
+    ],
+)
 
 
-TIMED_OUT = TimedOut()
-
-
-async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
+async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
     """\
-    Parallelize calls with a timeout across up to 5 mirrors at time,
-    to ensure our clients get a response in a reasonable time.
+    Fetch a beatmapset .osz2 file by any means necessary, balancing upon
+    multiple underlying beatmap mirrors to ensure the best possible
+    availability and performance.
     """
+    started_at = datetime.now()
 
-    # TODO: it would be nice to be able to stream the responses,
-    #       but that would require a different approach where the
-    #       discovery process would be complete once the mirror has
-    #       started streaming, rather than after the response has
-    #       been read in full.
+    await BEATMAP_SELECTOR.update_all_mirror_and_selector_weights()
 
-    concurrency_limit = 5
-    global_timeout = 15
-    semaphore = asyncio.Semaphore(concurrency_limit)
+    while True:
+        mirror = BEATMAP_SELECTOR.select_mirror()
+        beatmap_zip_data: bytes | None = None
+        try:
+            beatmap_zip_data = await mirror.fetch_beatmap_zip_data(beatmapset_id)
 
-    start_time = time.time()
+            if beatmap_zip_data is not None and (
+                not beatmap_zip_data.startswith(ZIP_FILE_HEADER)
+                or len(beatmap_zip_data) < 20_000
+            ):
+                raise ValueError("Received bad osz2 data from mirror")
+        except Exception as exc:
+            ended_at = datetime.now()
+            await beatmap_mirror_requests.create(
+                request_url=f"{mirror.base_url}/d/{beatmapset_id}",
+                api_key_id=None,
+                mirror_name=mirror.name,
+                success=False,
+                started_at=started_at,
+                ended_at=ended_at,
+                response_size=len(beatmap_zip_data) if beatmap_zip_data else 0,
+                response_error=str(exc),
+            )
+            await BEATMAP_SELECTOR.update_all_mirror_and_selector_weights()
+            logging.warning(
+                "Failed to fetch beatmapset osz2 from mirror",
+                exc_info=True,
+                extra={
+                    "mirror_name": mirror.name,
+                    "mirror_weight": mirror.weight,
+                    "beatmapset_id": beatmapset_id,
+                },
+            )
+            continue
+        else:
+            break
 
-    # TODO: prioritization based on reliability, speed, etc.
-    random.shuffle(BEATMAP_MIRRORS)
+    ended_at = datetime.now()
 
-    coroutines = [
-        asyncio.create_task(
-            run_with_semaphore(
-                semaphore,
-                mirror,
-                beatmapset_id,
-            ),
-        )
-        for mirror in BEATMAP_MIRRORS
-    ]
-    try:
-        done, pending = await asyncio.wait(
-            coroutines,
-            return_when=asyncio.FIRST_COMPLETED,
-            timeout=global_timeout,
-        )
-        for task in pending:
-            task.cancel()
-        first_result = await list(done)[0]
-    except TimeoutError:
-        return None
+    await beatmap_mirror_requests.create(
+        request_url=f"{mirror.base_url}/d/{beatmapset_id}",
+        api_key_id=None,
+        mirror_name=mirror.name,
+        success=True,
+        started_at=started_at,
+        ended_at=ended_at,
+        response_size=len(beatmap_zip_data) if beatmap_zip_data else 0,
+        response_error=None,
+    )
+    await BEATMAP_SELECTOR.update_all_mirror_and_selector_weights()
 
-    # TODO: log which mirrors finished, and which timed out
-
-    mirror, result = first_result
-    if result is None:
-        return None
-
-    end_time = time.time()
-    ms_elapsed = (end_time - start_time) * 1000
+    ms_elapsed = (ended_at.timestamp() - started_at.timestamp()) * 1000
 
     logging.info(
-        "A mirror was first to finish during .osz2 aggregate request",
+        "Served beatmapset osz2 from mirror",
         extra={
             "mirror_name": mirror.name,
+            "mirror_weight": mirror.weight,
             "beatmapset_id": beatmapset_id,
             "ms_elapsed": ms_elapsed,
-            "data_size": len(result),
-            "bad_data": (
-                result
-                if not result.startswith(b"PK\x03\x04") or len(result) < 20_000
-                else None
+            "data_size": (
+                len(beatmap_zip_data) if beatmap_zip_data is not None else None
             ),
         },
     )
-    return result
+    return beatmap_zip_data

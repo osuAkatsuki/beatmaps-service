@@ -1,3 +1,5 @@
+cryptography
+databases[aiomysql]
 fastapi
 httpx
 python-dotenv

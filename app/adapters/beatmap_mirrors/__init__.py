@@ -12,6 +12,7 @@ class BeatmapMirror(ABC):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.http_client = httpx.AsyncClient()
+        self.weight = 0
         super().__init__(*args, **kwargs)
 
     @abstractmethod
