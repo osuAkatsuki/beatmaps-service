@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 from fastapi import APIRouter
@@ -110,6 +111,10 @@ async def cheesegull_beatmap(beatmap_id: int):
     if osu_api_beatmap is None:
         return Response(status_code=404)
     cheesegull_beatmap = CheesegullBeatmap.from_osu_api_beatmap(osu_api_beatmap)
+    logging.info(
+        "Serving cheesegull beatmap",
+        extra={"beatmap_id": beatmap_id},
+    )
     return cheesegull_beatmap.model_dump()
 
 
@@ -120,5 +125,9 @@ async def cheesegull_beatmapset(beatmapset_id: int):
         return Response(status_code=404)
     cheesegull_beatmapset = CheesegullBeatmapset.from_osu_api_beatmapset(
         osu_api_beatmapset,
+    )
+    logging.info(
+        "Serving cheesegull beatmapset",
+        extra={"beatmapset_id": beatmapset_id},
     )
     return cheesegull_beatmapset.model_dump()
