@@ -11,7 +11,7 @@ from app.adapters.beatmap_mirrors.osu_direct import OsuDirectMirror
 from app.adapters.beatmap_mirrors.ripple import RippleMirror
 
 BEATMAP_MIRRORS: list[BeatmapMirror] = [
-    GatariMirror(),
+    # GatariMirror(),
     MinoMirror(),
     NerinyanMirror(),
     OsuDirectMirror(),
