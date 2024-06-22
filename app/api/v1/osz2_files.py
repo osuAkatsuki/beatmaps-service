@@ -17,5 +17,7 @@ async def download_beatmapset_osz2(beatmapset_id: int):
                 "Content-Disposition": f"attachment; filename={beatmapset_id}.osz",
             },
         )
+    if isinstance(beatmap_zip_data, mirror_aggregate.TimedOut):
+        return Response(status_code=408)
 
-    return None
+    return Response(status_code=404)

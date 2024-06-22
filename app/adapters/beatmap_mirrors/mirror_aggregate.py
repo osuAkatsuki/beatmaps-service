@@ -28,7 +28,13 @@ async def run_with_semaphore(
         return await coro(*args, **kwargs)
 
 
-async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
+class TimedOut: ...
+
+
+TIMED_OUT = TimedOut()
+
+
+async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
     """\
     Parallelize calls with a timeout across up to 5 mirrors at time,
     to ensure our clients get a response in a reasonable time.
