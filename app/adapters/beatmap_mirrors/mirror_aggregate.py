@@ -6,11 +6,13 @@ from typing import TypeVar
 
 from app.adapters.beatmap_mirrors import BeatmapMirror
 from app.adapters.beatmap_mirrors.mino import MinoMirror
+from app.adapters.beatmap_mirrors.nerinyan import NerinyanMirror
 from app.adapters.beatmap_mirrors.osu_direct import OsuDirectMirror
 
 BEATMAP_MIRRORS: list[BeatmapMirror] = [
-    OsuDirectMirror(),
     MinoMirror(),
+    NerinyanMirror(),
+    OsuDirectMirror(),
 ]
 
 
