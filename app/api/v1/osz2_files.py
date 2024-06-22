@@ -6,7 +6,7 @@ from app.adapters.beatmap_mirrors import mirror_aggregate
 router = APIRouter()
 
 
-@router.get("/api/d/{beatmap_id}")
+@router.get("/api/d/{beatmapset_id}")
 async def download_beatmapset_osz2(beatmapset_id: int):
     beatmap_zip_data = await mirror_aggregate.fetch_beatmap_zip_data(beatmapset_id)
     if beatmap_zip_data is not None:
