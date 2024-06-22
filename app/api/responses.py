@@ -7,8 +7,11 @@ import fastapi.responses
 
 class JSONEncoder(json.JSONEncoder):
     def default(self, o):
-        if isinstance(o, (datetime.date, datetime.datetime)):
-            return o.isoformat()
+        if isinstance(o, datetime.datetime):
+            # Append "Z" for utc
+            tz_suffix = "Z" if o.tzinfo in (None, datetime.UTC) else "%z"
+            return o.strftime("%Y-%m-%dT%H:%M:%S" + tz_suffix)
+
         return super().default(o)
 
 
