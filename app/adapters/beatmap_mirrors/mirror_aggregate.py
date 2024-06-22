@@ -12,6 +12,8 @@ from app.scheduling import DynamicWeightedRoundRobin
 # from app.adapters.beatmap_mirrors.mino import MinoMirror
 # from app.adapters.beatmap_mirrors.ripple import RippleMirror
 
+ZIP_FILE_HEADER = b"PK\x03\x04"
+
 BEATMAP_SELECTOR = DynamicWeightedRoundRobin(
     mirrors=[
         # GatariMirror(),
@@ -42,8 +44,15 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
 
     while True:
         mirror = BEATMAP_SELECTOR.select_mirror()
+        beatmap_zip_data: bytes | None = None
         try:
             beatmap_zip_data = await mirror.fetch_beatmap_zip_data(beatmapset_id)
+
+            if beatmap_zip_data is not None and (
+                not beatmap_zip_data.startswith(ZIP_FILE_HEADER)
+                or len(beatmap_zip_data) < 20_000
+            ):
+                raise ValueError("Received bad osz2 data from mirror")
         except Exception as exc:
             ended_at = datetime.now()
             await beatmap_mirror_requests.create(
@@ -54,7 +63,9 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
                     success=False,
                     started_at=started_at,
                     ended_at=ended_at,
-                    response_size=None,
+                    response_size=(
+                        len(beatmap_zip_data) if beatmap_zip_data is not None else None
+                    ),
                     response_error=str(exc),
                 ),
             )
@@ -89,24 +100,13 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
     ms_elapsed = (ended_at.timestamp() - started_at.timestamp()) * 1000
 
     logging.info(
-        "A mirror was first to finish during .osz2 aggregate request",
+        "Served beatmapset osz2 from mirror",
         extra={
             "mirror_name": mirror.name,
             "beatmapset_id": beatmapset_id,
             "ms_elapsed": ms_elapsed,
             "data_size": (
                 len(beatmap_zip_data) if beatmap_zip_data is not None else None
-            ),
-            "bad_data": (
-                beatmap_zip_data
-                if (
-                    beatmap_zip_data is not None
-                    and (
-                        not beatmap_zip_data.startswith(b"PK\x03\x04")
-                        or len(beatmap_zip_data) < 20_000
-                    )
-                )
-                else None
             ),
         },
     )
