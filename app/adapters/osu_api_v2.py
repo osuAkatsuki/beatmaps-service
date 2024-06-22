@@ -1,11 +1,14 @@
 from datetime import datetime
 from enum import StrEnum
+from typing import Any
 
 import httpx
 from pydantic import BaseModel
+from pydantic import Field
 
 from app import oauth
 from app import settings
+
 
 http_client = httpx.AsyncClient(
     base_url="https://osu.ppy.sh/api/v2/",
@@ -48,7 +51,8 @@ class Beatmap(BaseModel):
 
     checksum: str | None
     failtimes: Failtimes
-    max_combo: int
+    max_combo: int | None = None
+    bpm: int
 
 
 class BeatmapExtended(Beatmap):
@@ -77,3 +81,114 @@ async def get_beatmap(beatmap_id: int) -> BeatmapExtended:
     response = await http_client.get(f"beatmaps/{beatmap_id}")
     response.raise_for_status()
     return BeatmapExtended(**response.json())
+
+
+class Covers(BaseModel):
+    # cover	string
+    # cover@2x	string
+    # card	string
+    # card@2x	string
+    # list	string
+    # list@2x	string
+    # slimcover	string
+    # slimcover@2x	string
+    cover: str
+    cover2x: str = Field(alias="cover@2x")
+    card: str
+    card2x: str = Field(alias="card@2x")
+    list: str
+    list2x: str = Field(alias="list@2x")
+    slimcover: str
+    slimcover2x: str = Field(alias="slimcover@2x")
+
+
+class RequiredMeta(BaseModel):
+    main_ruleset: int
+    non_main_ruleset: int
+
+
+class NominationsSummary(BaseModel):
+    current: int
+    eligible_main_rulesets: list[Ruleset]
+    required_meta: RequiredMeta
+
+
+class Availability(BaseModel):
+    download_disabled: bool
+    more_information: str | None
+
+
+class Genre(BaseModel):
+    id: int
+    name: str
+
+
+class Description(BaseModel):
+    description: str  # (html string)
+
+
+class Language(BaseModel):
+    id: int
+    name: str
+
+
+class Beatmapset(BaseModel):
+    artist: str
+    artist_unicode: str | None
+    covers: Covers
+    creator: str
+    favourite_count: int
+    hype: Any | None  # TODO
+    id: int
+    nsfw: bool
+    offset: int
+    play_count: int
+    preview_url: str
+    source: str
+    spotlight: bool
+    status: str  # TODO enum
+    title: str
+    title_unicode: str | None
+    user_id: int
+    video: bool
+
+    bpm: int | None
+    can_be_hyped: bool
+    deleted_at: datetime | None
+    discussion_enabled: bool
+    discussion_locked: bool
+    is_scoreable: bool
+    last_updated: datetime
+    legacy_thread_url: str
+    nominations_summary: NominationsSummary
+    ranked: int  # TODO: enum
+    ranked_date: datetime | None
+    storyboard: bool
+    submitted_date: datetime
+    tags: str
+
+    availability: Availability
+
+    beatmaps: list[BeatmapExtended] | None
+    converts: list[BeatmapExtended]
+    current_nominations: list[str] | None
+    current_user_attributes: Any | None = None  # TODO
+    description: Description
+    discussions: Any = None  # TODO
+    events: Any | None = None  # TODO
+    genre: Genre | None = None
+    has_favourited: Any = None  # TODO
+    language: Language | None = None  # TODO
+    pack_tags: list[str] | None
+    ratings: Any  # TODO
+    recent_favourites: Any  # TODO
+    related_users: Any  # TODO
+    user: Any  # TODO
+    track_id: int | None
+
+
+async def get_beatmapset(beatmapset_id: int) -> Beatmapset:
+    response = await http_client.get(f"beatmapsets/{beatmapset_id}")
+    response.raise_for_status()
+    xd = response.json()
+    return Beatmapset(**xd)
