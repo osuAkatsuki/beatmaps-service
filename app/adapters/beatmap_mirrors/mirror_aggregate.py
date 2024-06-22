@@ -12,7 +12,7 @@ from app.adapters.beatmap_mirrors.ripple import RippleMirror
 
 BEATMAP_MIRRORS: list[BeatmapMirror] = [
     # GatariMirror(),
-    MinoMirror(),
+    # MinoMirror(),
     NerinyanMirror(),
     OsuDirectMirror(),
     # Disabled as ripple only supports ranked maps
