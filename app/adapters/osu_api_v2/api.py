@@ -64,10 +64,16 @@ BEATMAPS_CACHE: dict[int, BeatmapExtended] = {}
 
 async def get_beatmap(beatmap_id: int) -> BeatmapExtended | None:
     if beatmap_id in BEATMAPS_CACHE:
-        logging.info("Cache hit", extra={"resource": "beatmap", "id": beatmap_id})
+        logging.info(
+            "Cache result",
+            extra={"result": "hit", "resource": "beatmap", "id": beatmap_id},
+        )
         return BEATMAPS_CACHE[beatmap_id]
 
-    logging.info("Cache miss", extra={"resource": "beatmap", "id": beatmap_id})
+    logging.info(
+        "Cache result",
+        extra={"result": "miss", "resource": "beatmap", "id": beatmap_id},
+    )
 
     osu_api_response_data: dict[str, Any] | None = None
     try:
@@ -93,10 +99,16 @@ BEATMAPSETS_CACHE: dict[int, BeatmapsetExtended] = {}
 
 async def get_beatmapset(beatmapset_id: int) -> BeatmapsetExtended | None:
     if beatmapset_id in BEATMAPSETS_CACHE:
-        logging.info("Cache hit", extra={"resource": "beatmapset", "id": beatmapset_id})
+        logging.info(
+            "Cache result",
+            extra={"result": "hit", "resource": "beatmapset", "id": beatmapset_id},
+        )
         return BEATMAPSETS_CACHE[beatmapset_id]
 
-    logging.info("Cache miss", extra={"resource": "beatmapset", "id": beatmapset_id})
+    logging.info(
+        "Cache result",
+        extra={"result": "miss", "resource": "beatmapset", "id": beatmapset_id},
+    )
 
     osu_api_response_data: dict[str, Any] | None = None
     try:
