@@ -1,5 +1,6 @@
 from collections.abc import AsyncGenerator
 from collections.abc import Generator
+from typing import Any
 
 import httpx
 
@@ -10,12 +11,16 @@ class AsyncOAuth(httpx.Auth):
         client_id: str,
         client_secret: str,
         token_endpoint: str,
+        *args: Any,
+        **kwargs: Any,
     ) -> None:
         self.client_id = client_id
         self.client_secret = client_secret
         self.token_endpoint = token_endpoint
 
         self.access_token: str | None = None
+
+        super().__init__(*args, **kwargs)
 
     def build_refresh_request(self) -> httpx.Request:
         return httpx.Request(

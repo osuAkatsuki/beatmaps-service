@@ -13,7 +13,7 @@ from app import settings
 OSU_API_V2_TOKEN_ENDPOINT = "https://osu.ppy.sh/oauth/token"
 
 
-def log_osu_api_request(request: httpx.Request) -> None:
+async def log_osu_api_request(request: httpx.Request) -> None:
     if request.url == OSU_API_V2_TOKEN_ENDPOINT:
         return None
 
@@ -25,7 +25,7 @@ def log_osu_api_request(request: httpx.Request) -> None:
     return None
 
 
-http_client = httpx.AsyncClient(
+osu_api_v2_http_client = httpx.AsyncClient(
     base_url="https://osu.ppy.sh/api/v2/",
     auth=oauth.AsyncOAuth(
         client_id=settings.OSU_API_V2_CLIENT_ID,
@@ -93,7 +93,7 @@ class BeatmapExtended(Beatmap):
 
 
 async def get_beatmap(beatmap_id: int) -> BeatmapExtended | None:
-    response = await http_client.get(f"beatmaps/{beatmap_id}")
+    response = await osu_api_v2_http_client.get(f"beatmaps/{beatmap_id}")
     if response.status_code == 404:
         return None
     response.raise_for_status()
@@ -197,7 +197,7 @@ class Beatmapset(BaseModel):
 
 
 async def get_beatmapset(beatmapset_id: int) -> Beatmapset | None:
-    response = await http_client.get(f"beatmapsets/{beatmapset_id}")
+    response = await osu_api_v2_http_client.get(f"beatmapsets/{beatmapset_id}")
     if response.status_code == 404:
         return None
     response.raise_for_status()
