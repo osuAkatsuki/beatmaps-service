@@ -169,15 +169,18 @@ def get_osu_api_v2_search_ranked_status(
 @router.get("/api/search")
 async def cheesegull_search(
     query: str,
-    status: CheesegullRankedStatus,
-    mode: osu_api_v2.GameMode,
+    status: CheesegullRankedStatus | None = None,
+    mode: osu_api_v2.GameMode | None = None,
     offset: int = 1,
     amount: int = Query(50, ge=1, le=100),
     # TODO: auth, or at least per-ip ratelimit
 ):
-    ranked_status = get_osu_api_v2_search_ranked_status(status)
-    if ranked_status is None:
-        return Response(status_code=400)
+    if status is not None:
+        ranked_status = get_osu_api_v2_search_ranked_status(status)
+        if ranked_status is None:
+            return Response(status_code=400)
+    else:
+        ranked_status = None
 
     page = offset // (amount + 1)
 
