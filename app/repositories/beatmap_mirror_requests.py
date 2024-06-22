@@ -21,46 +21,49 @@ class BeatmapMirrorScore(BaseModel):
     score: float
 
 
-async def get_active_beatmap_mirror_scores() -> list[BeatmapMirrorScore]:
+TARGET_LATENCY_MS = 500
+
+
+async def get_mirror_score(mirror_name: str) -> float:
+    """Get a score for a mirror based on recent requests. Higher is better."""
     query = """\
-        SELECT mirror_name, success, started_at, ended_at
+        SELECT success, started_at, ended_at
         FROM beatmap_mirror_requests
         WHERE started_at > NOW() - INTERVAL 1 HOUR
+        AND mirror_name = :mirror_name
+        ORDER BY started_at DESC
     """
     mirror_requests = [
         BeatmapMirrorRequest(**dict(rec._mapping))
-        for rec in await state.database.fetch_all(query=query)
+        for rec in await state.database.fetch_all(
+            query=query,
+            values={"mirror_name": mirror_name},
+        )
     ]
+    if not mirror_requests:
+        return 0
 
-    p90_mirror_latency = sorted(
-        mirror_request.ended_at - mirror_request.started_at
-        for mirror_request in mirror_requests
-    )[int(len(mirror_requests) * 0.9)]
-
-    mirror_scores: dict[str, float] = {}
-
+    score = 0
     for mirror_request in mirror_requests:
         if mirror_request.success:
             # successes are good, especially if they're fast
-            # 0-1 depending on latency vs. p90 latency
-            score = (
+            # 0-1 depending on latency vs. target latency
+            score += (
                 1
-                - (mirror_request.ended_at - mirror_request.started_at)
-                / p90_mirror_latency
+                - (
+                    (
+                        mirror_request.ended_at - mirror_request.started_at
+                    ).total_seconds()
+                    * 1000
+                )
+                / TARGET_LATENCY_MS
             )
 
         else:
             # failures are very bad
-            score = -10
+            score -= 10
 
-        mirror_scores[mirror_request.mirror_name] = (
-            mirror_scores.get(mirror_request.mirror_name, 0) + score
-        )
-
-    return [
-        BeatmapMirrorScore(mirror_name=mirror_name, score=score)
-        for mirror_name, score in mirror_scores.items()
-    ]
+    return score
 
 
 async def log_beatmap_mirror_request(request: BeatmapMirrorRequest) -> None:

@@ -9,11 +9,6 @@ def create_dsn(
     port: int | None,
     database: str,
 ) -> str:
-    dsn = f"mysql://"
-    if driver:
-        dsn += f"{driver}:"
-    dsn += f"{username}:{urllib.parse.quote_plus(password)}@{host}"
-    if port:
-        dsn += f":{port}"
-    dsn += f"/{database}"
-    return dsn
+    driver_str = f"+{driver}" if driver else ""
+    passwd_str = urllib.parse.quote_plus(password) if password else ""
+    return f"mysql{driver_str}://{username}:{passwd_str}@{host}:{port}/{database}"

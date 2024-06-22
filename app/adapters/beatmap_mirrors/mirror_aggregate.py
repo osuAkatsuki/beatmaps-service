@@ -1,6 +1,7 @@
 import logging
 
 from datetime import datetime
+from datetime import timedelta
 
 from app.adapters.beatmap_mirrors import BeatmapMirror
 
@@ -35,7 +36,23 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | TimedOut | None:
     availability and performance.
     """
     started_at = datetime.now()
-    for mirror in BEATMAP_MIRRORS:
+
+    for beatmap_mirror in BEATMAP_MIRRORS:
+        if beatmap_mirror.score_last_updated_at < (
+            datetime.now() - timedelta(minutes=5)
+        ):
+            beatmap_mirror.score = await beatmap_mirror_requests.get_mirror_score(
+                beatmap_mirror.name,
+            )
+            beatmap_mirror.score_last_updated_at = datetime.now()
+
+    sorted_mirrors = sorted(
+        BEATMAP_MIRRORS,
+        key=lambda mirror: mirror.score,
+        reverse=True,
+    )
+
+    for mirror in sorted_mirrors:
         try:
             result = await mirror.fetch_beatmap_zip_data(beatmapset_id)
         except Exception as exc:

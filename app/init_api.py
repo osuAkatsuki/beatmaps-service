@@ -1,4 +1,6 @@
 import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from databases import Database
 from fastapi import FastAPI
@@ -10,6 +12,13 @@ from app import settings
 from app import state
 from app.adapters import mysql
 from app.api import api_router
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    await state.database.connect()
+    yield
+    await state.database.disconnect()
 
 
 def init_routes(app: FastAPI) -> FastAPI:
@@ -52,6 +61,7 @@ def init_api() -> FastAPI:
         docs_url="/docs" if settings.APP_ENV != "production" else None,
         redoc_url="/redoc" if settings.APP_ENV != "production" else None,
         swagger_ui_oauth2_redirect_url=None,
+        lifespan=lifespan,
     )
     app = init_routes(app)
     app = init_middleware(app)

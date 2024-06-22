@@ -1,3 +1,4 @@
+cryptography
 databases[aiomysql]
 fastapi
 httpx
