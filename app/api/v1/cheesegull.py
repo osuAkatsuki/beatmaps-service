@@ -16,10 +16,14 @@ from enum import IntEnum
 from fastapi import APIRouter
 from fastapi import Query
 from fastapi import Response
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from app.adapters.osu_api_v2 import api
-from app.adapters.osu_api_v2.api import Category
+from app.adapters.osu_api_v2.models import BeatmapExtended
+from app.adapters.osu_api_v2.models import BeatmapsetExtended
+from app.adapters.osu_api_v2.models import Category
+from app.common_models import GameMode
 from app.common_models import RankedStatus
 
 router = APIRouter()
@@ -46,7 +50,7 @@ class CheesegullBeatmap(BaseModel):
     @classmethod
     def from_osu_api_beatmap(
         cls,
-        beatmap: api.BeatmapExtended,
+        beatmap: BeatmapExtended,
     ) -> "CheesegullBeatmap":
         return cls(
             BeatmapID=beatmap.id,
@@ -88,11 +92,11 @@ class CheesegullBeatmapset(BaseModel):
     @classmethod
     def from_osu_api_beatmapset(
         cls,
-        osu_api_beatmapset: api.BeatmapsetExtended,
+        osu_api_beatmapset: BeatmapsetExtended,
     ) -> "CheesegullBeatmapset":
         children_beatmaps: list[CheesegullBeatmap] = []
         for osu_api_beatmap in osu_api_beatmapset.beatmaps or []:
-            if not isinstance(osu_api_beatmap, api.BeatmapExtended):
+            if not isinstance(osu_api_beatmap, BeatmapExtended):
                 raise ValueError("beatmapset.beatmaps is not a list of BeatmapExtended")
             cheesegull_beatmap = CheesegullBeatmap.from_osu_api_beatmap(osu_api_beatmap)
             children_beatmaps.append(cheesegull_beatmap)
@@ -171,11 +175,11 @@ def get_osu_api_v2_search_ranked_status(
 async def cheesegull_search(
     query: str = "",
     status: CheesegullRankedStatus | None = None,
-    mode: api.GameMode | None = None,
+    mode: GameMode | None = None,
     offset: int = 0,
     amount: int = Query(50, ge=1, le=100),
     # TODO: auth, or at least per-ip ratelimit
-):
+) -> Response:
     if status is not None:
         ranked_status = get_osu_api_v2_search_ranked_status(status)
         if ranked_status is None:
@@ -210,4 +214,6 @@ async def cheesegull_search(
             "results_count": len(cheesegull_beatmapsets),
         },
     )
-    return [beatmapset.model_dump() for beatmapset in cheesegull_beatmapsets]
+    return JSONResponse(
+        content=[beatmapset.model_dump() for beatmapset in cheesegull_beatmapsets],
+    )
