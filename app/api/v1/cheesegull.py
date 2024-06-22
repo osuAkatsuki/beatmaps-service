@@ -14,6 +14,7 @@ from datetime import datetime
 from enum import IntEnum
 
 from fastapi import APIRouter
+from fastapi import Header
 from fastapi import Query
 from fastapi import Response
 from pydantic import BaseModel
@@ -125,7 +126,11 @@ class CheesegullBeatmapset(BaseModel):
 
 
 @router.get("/api/b/{beatmap_id}")
-async def cheesegull_beatmap(beatmap_id: int) -> Response:
+async def cheesegull_beatmap(
+    beatmap_id: int,
+    client_ip_address: str | None = Header(None, alias="X-Real-IP"),
+    client_user_agent: str | None = Header(None, alias="User-Agent"),
+) -> Response:
     osu_api_beatmap = await api.get_beatmap(beatmap_id)
     if osu_api_beatmap is None:
         return Response(status_code=404)
@@ -133,13 +138,21 @@ async def cheesegull_beatmap(beatmap_id: int) -> Response:
     cheesegull_beatmap = CheesegullBeatmap.from_osu_api_beatmap(osu_api_beatmap)
     logging.info(
         "Serving cheesegull beatmap",
-        extra={"beatmap_id": beatmap_id},
+        extra={
+            "beatmap_id": beatmap_id,
+            "client_ip_address": client_ip_address,
+            "client_user_agent": client_user_agent,
+        },
     )
     return JSONResponse(content=cheesegull_beatmap.model_dump())
 
 
 @router.get("/api/s/{beatmapset_id}")
-async def cheesegull_beatmapset(beatmapset_id: int) -> Response:
+async def cheesegull_beatmapset(
+    beatmapset_id: int,
+    client_ip_address: str | None = Header(None, alias="X-Real-IP"),
+    client_user_agent: str | None = Header(None, alias="User-Agent"),
+) -> Response:
     osu_api_beatmapset = await api.get_beatmapset(beatmapset_id)
     if osu_api_beatmapset is None:
         return Response(status_code=404)
@@ -149,7 +162,11 @@ async def cheesegull_beatmapset(beatmapset_id: int) -> Response:
     )
     logging.info(
         "Serving cheesegull beatmapset",
-        extra={"beatmapset_id": beatmapset_id},
+        extra={
+            "beatmapset_id": beatmapset_id,
+            "client_ip_address": client_ip_address,
+            "client_user_agent": client_user_agent,
+        },
     )
     return JSONResponse(content=cheesegull_beatmapset.model_dump())
 
@@ -178,6 +195,8 @@ async def cheesegull_search(
     mode: GameMode | None = None,
     offset: int = 0,
     amount: int = Query(50, ge=1, le=100),
+    client_ip_address: str | None = Header(None, alias="X-Real-IP"),
+    client_user_agent: str | None = Header(None, alias="User-Agent"),
     # TODO: auth, or at least per-ip ratelimit
 ) -> Response:
     if status is not None:
@@ -212,6 +231,8 @@ async def cheesegull_search(
             "query": query,
             "page": page,
             "results_count": len(cheesegull_beatmapsets),
+            "client_ip_address": client_ip_address,
+            "client_user_agent": client_user_agent,
         },
     )
     return JSONResponse(
