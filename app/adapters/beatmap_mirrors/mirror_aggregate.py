@@ -1,0 +1,65 @@
+import asyncio
+from collections.abc import Awaitable
+from collections.abc import Callable
+from typing import ParamSpec
+from typing import TypeVar
+
+from app.adapters.beatmap_mirrors import BeatmapMirror
+from app.adapters.beatmap_mirrors.mino import MinoMirror
+from app.adapters.beatmap_mirrors.osu_direct import OsuDirectMirror
+
+BEATMAP_MIRRORS: list[BeatmapMirror] = [
+    OsuDirectMirror(),
+    MinoMirror(),
+]
+
+
+P = ParamSpec("P")
+R = TypeVar("R")
+
+
+async def run_with_semaphore(
+    semaphore: asyncio.Semaphore,
+    coro: Callable[P, Awaitable[R]],
+    *args: P.args,
+    **kwargs: P.kwargs,
+) -> R:
+    async with semaphore:
+        return await coro(*args, **kwargs)
+
+
+async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
+    """\
+    Parallelize calls with a timeout across up to 5 mirrors at time,
+    to ensure our clients get a response in a reasonable time.
+    """
+
+    concurrency_limit = 5
+    global_timeout = 10
+    semaphore = asyncio.Semaphore(concurrency_limit)
+
+    coroutines = [
+        asyncio.create_task(
+            run_with_semaphore(
+                semaphore,
+                mirror.fetch_beatmap_zip_data,
+                beatmapset_id,
+            ),
+        )
+        for mirror in BEATMAP_MIRRORS
+    ]
+    try:
+        done, pending = await asyncio.wait(
+            coroutines,
+            return_when=asyncio.FIRST_COMPLETED,
+            timeout=global_timeout,
+        )
+        for task in pending:
+            task.cancel()
+        first_result = await list(done)[0]
+    except TimeoutError:
+        return None
+
+    # TODO: log which mirrors finished, and which timed out
+
+    return first_result

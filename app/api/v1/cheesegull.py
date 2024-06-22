@@ -18,8 +18,8 @@ from fastapi import Query
 from fastapi import Response
 from pydantic import BaseModel
 
-from app.adapters import osu_api_v2
-from app.adapters.osu_api_v2 import Category
+from app.adapters.osu_api_v2 import api
+from app.adapters.osu_api_v2.api import Category
 from app.common_models import RankedStatus
 
 router = APIRouter()
@@ -46,7 +46,7 @@ class CheesegullBeatmap(BaseModel):
     @classmethod
     def from_osu_api_beatmap(
         cls,
-        beatmap: osu_api_v2.BeatmapExtended,
+        beatmap: api.BeatmapExtended,
     ) -> "CheesegullBeatmap":
         return cls(
             BeatmapID=beatmap.id,
@@ -88,11 +88,11 @@ class CheesegullBeatmapset(BaseModel):
     @classmethod
     def from_osu_api_beatmapset(
         cls,
-        osu_api_beatmapset: osu_api_v2.BeatmapsetExtended,
+        osu_api_beatmapset: api.BeatmapsetExtended,
     ) -> "CheesegullBeatmapset":
         children_beatmaps: list[CheesegullBeatmap] = []
         for osu_api_beatmap in osu_api_beatmapset.beatmaps or []:
-            if not isinstance(osu_api_beatmap, osu_api_v2.BeatmapExtended):
+            if not isinstance(osu_api_beatmap, api.BeatmapExtended):
                 raise ValueError("beatmapset.beatmaps is not a list of BeatmapExtended")
             cheesegull_beatmap = CheesegullBeatmap.from_osu_api_beatmap(osu_api_beatmap)
             children_beatmaps.append(cheesegull_beatmap)
@@ -122,7 +122,7 @@ class CheesegullBeatmapset(BaseModel):
 
 @router.get("/api/b/{beatmap_id}")
 async def cheesegull_beatmap(beatmap_id: int):
-    osu_api_beatmap = await osu_api_v2.get_beatmap(beatmap_id)
+    osu_api_beatmap = await api.get_beatmap(beatmap_id)
     if osu_api_beatmap is None:
         return Response(status_code=404)
 
@@ -136,7 +136,7 @@ async def cheesegull_beatmap(beatmap_id: int):
 
 @router.get("/api/s/{beatmapset_id}")
 async def cheesegull_beatmapset(beatmapset_id: int):
-    osu_api_beatmapset = await osu_api_v2.get_beatmapset(beatmapset_id)
+    osu_api_beatmapset = await api.get_beatmapset(beatmapset_id)
     if osu_api_beatmapset is None:
         return Response(status_code=404)
 
@@ -171,7 +171,7 @@ def get_osu_api_v2_search_ranked_status(
 async def cheesegull_search(
     query: str = "",
     status: CheesegullRankedStatus | None = None,
-    mode: osu_api_v2.GameMode | None = None,
+    mode: api.GameMode | None = None,
     offset: int = 0,
     amount: int = Query(50, ge=1, le=100),
     # TODO: auth, or at least per-ip ratelimit
@@ -187,7 +187,7 @@ async def cheesegull_search(
     cheesegull_beatmapsets: list[CheesegullBeatmapset] = []
     page = offset // amount + 1
     while num_fetched < amount:
-        osu_api_search_response = await osu_api_v2.search_beatmapsets(
+        osu_api_search_response = await api.search_beatmapsets(
             query=query,
             mode=mode,
             category=ranked_status,
