@@ -2,13 +2,13 @@ import logging
 import random
 from datetime import datetime
 
+from app.adapters.beatmap_mirrors.mino import MinoMirror
 from app.adapters.beatmap_mirrors.nerinyan import NerinyanMirror
 from app.adapters.beatmap_mirrors.osu_direct import OsuDirectMirror
 from app.repositories import beatmap_mirror_requests
 from app.scheduling import DynamicWeightedRoundRobin
 
 # from app.adapters.beatmap_mirrors.gatari import GatariMirror
-# from app.adapters.beatmap_mirrors.mino import MinoMirror
 # from app.adapters.beatmap_mirrors.ripple import RippleMirror
 
 ZIP_FILE_HEADER = b"PK\x03\x04"
@@ -16,7 +16,7 @@ ZIP_FILE_HEADER = b"PK\x03\x04"
 BEATMAP_SELECTOR = DynamicWeightedRoundRobin(
     mirrors=[
         # GatariMirror(),
-        # MinoMirror(),
+        MinoMirror(),
         NerinyanMirror(),
         OsuDirectMirror(),
         # Disabled as ripple only supports ranked maps
