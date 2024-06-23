@@ -108,12 +108,12 @@ class GenreId(IntEnum):
 
 
 class Genre(BaseModel):
-    id: GenreId
+    id: GenreId | None
     name: str
 
 
 class Description(BaseModel):
-    description: str  # (html string)
+    description: str | None  # (html string)
 
 
 class LanguageId(IntEnum):
@@ -167,7 +167,7 @@ class BeatmapsetExtended(Beatmapset):
     discussion_locked: bool
     is_scoreable: bool
     last_updated: datetime
-    legacy_thread_url: str
+    legacy_thread_url: str | None
     nominations_summary: NominationsSummary
     ranked: int  # TODO: enum
     ranked_date: datetime | None
