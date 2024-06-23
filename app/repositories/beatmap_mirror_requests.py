@@ -5,6 +5,10 @@ from pydantic import BaseModel
 
 from app import state
 
+# Give new mirrors a fair shot
+# to get their foot in the race
+MIRROR_INITIAL_WEIGHT = 100
+
 
 class BeatmapMirrorScore(BaseModel):
     mirror_name: str
@@ -31,7 +35,7 @@ async def get_mirror_weight(mirror_name: str) -> int:
         {"mirror_name": mirror_name},
     )
     if p90_success_ms_latency is None:
-        return 1
+        return MIRROR_INITIAL_WEIGHT
 
     failure_rate = await state.database.fetch_val(
         """\
@@ -43,7 +47,7 @@ async def get_mirror_weight(mirror_name: str) -> int:
         {"mirror_name": mirror_name},
     )
     if failure_rate is None:
-        return 1
+        return MIRROR_INITIAL_WEIGHT
 
     # https://www.desmos.com/calculator/0am8xnwxyo
     latency_weight = 1000 / math.log(p90_success_ms_latency)
