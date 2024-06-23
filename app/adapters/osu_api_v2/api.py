@@ -30,6 +30,7 @@ osu_api_v2_http_client = httpx.AsyncClient(
         ],
         token_endpoint=OSU_API_V2_TOKEN_ENDPOINT,
     ),
+    timeout=httpx.Timeout(15),
 )
 
 
