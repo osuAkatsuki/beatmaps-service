@@ -6,7 +6,6 @@ from app.adapters import osu_mirrors
 router = APIRouter(tags=["osz2 Files"])
 
 
-@router.get("/api/d/{beatmapset_id}")
 @router.get("/public/api/d/{beatmapset_id}")
 async def download_beatmapset_osz2(beatmapset_id: int) -> Response:
     beatmap_zip_data = await osu_mirrors.fetch_beatmap_zip_data(beatmapset_id)

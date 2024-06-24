@@ -120,7 +120,6 @@ class CheesegullBeatmapset(BaseModel):
         )
 
 
-@router.get("/api/b/{beatmap_id}")
 @router.get("/public/api/b/{beatmap_id}")
 async def cheesegull_beatmap(
     beatmap_id: int,
@@ -143,7 +142,6 @@ async def cheesegull_beatmap(
     return JSONResponse(content=cheesegull_beatmap.model_dump())
 
 
-@router.get("/api/s/{beatmapset_id}")
 @router.get("/public/api/s/{beatmapset_id}")
 async def cheesegull_beatmapset(
     beatmapset_id: int,
@@ -185,7 +183,6 @@ def get_osu_api_v2_search_ranked_status(
     return search_ranked_status
 
 
-@router.get("/api/search")
 @router.get("/public/api/search")
 async def cheesegull_search(
     query: str = "",
