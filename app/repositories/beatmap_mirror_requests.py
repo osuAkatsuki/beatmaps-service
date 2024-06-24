@@ -17,7 +17,7 @@ class BeatmapMirrorScore(BaseModel):
 
 async def get_mirror_weight(mirror_name: str) -> int:
     """Give the mirror a weighting based on its latency and failure rate."""
-    p90_success_ms_latency = await state.database.fetch_val(
+    p75_success_ms_latency = await state.database.fetch_val(
         """\
         WITH request_latencies AS (
             SELECT (ended_at - started_at) * 1000 AS ms_elapsed,
@@ -28,13 +28,13 @@ async def get_mirror_weight(mirror_name: str) -> int:
             AND success = 1
         )
         SELECT DISTINCT first_value(ms_elapsed) OVER (
-            ORDER BY CASE WHEN p <= 0.9 THEN p END DESC
-        ) p90_success_ms_latency
+            ORDER BY CASE WHEN p <= 0.75 THEN p END DESC
+        ) p75_success_ms_latency
         FROM request_latencies
         """,
         {"mirror_name": mirror_name},
     )
-    if p90_success_ms_latency is None:
+    if p75_success_ms_latency is None:
         return MIRROR_INITIAL_WEIGHT
 
     failure_rate = await state.database.fetch_val(
@@ -50,7 +50,7 @@ async def get_mirror_weight(mirror_name: str) -> int:
         return MIRROR_INITIAL_WEIGHT
 
     # https://www.desmos.com/calculator/wxpsjhdby9
-    latency_weight = 1000 * math.exp(-1 / 1000 * float(p90_success_ms_latency))
+    latency_weight = 1000 * math.exp(-1 / 1000 * float(p75_success_ms_latency))
     failure_weight = math.exp(-30 * failure_rate)
     # TODO: integrate `mirror_cache_age` into the weight calculation
     weight = max(1, int(latency_weight * failure_weight))
