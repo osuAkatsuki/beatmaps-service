@@ -121,7 +121,7 @@ class CheesegullBeatmapset(BaseModel):
 
 
 @router.get("/api/b/{beatmap_id}")
-@router.get("/api/public/b/{beatmap_id}")
+@router.get("/public/api/b/{beatmap_id}")
 async def cheesegull_beatmap(
     beatmap_id: int,
     client_ip_address: str | None = Header(None, alias="X-Real-IP"),
@@ -144,7 +144,7 @@ async def cheesegull_beatmap(
 
 
 @router.get("/api/s/{beatmapset_id}")
-@router.get("/api/public/s/{beatmapset_id}")
+@router.get("/public/api/s/{beatmapset_id}")
 async def cheesegull_beatmapset(
     beatmapset_id: int,
     client_ip_address: str | None = Header(None, alias="X-Real-IP"),
@@ -186,7 +186,7 @@ def get_osu_api_v2_search_ranked_status(
 
 
 @router.get("/api/search")
-@router.get("/api/public/search")
+@router.get("/public/api/search")
 async def cheesegull_search(
     query: str = "",
     status: CheesegullRankedStatus | None = None,
