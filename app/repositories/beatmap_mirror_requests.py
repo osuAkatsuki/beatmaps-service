@@ -50,7 +50,7 @@ async def get_mirror_weight(mirror_name: str) -> int:
         return MIRROR_INITIAL_WEIGHT
 
     # https://www.desmos.com/calculator/wxpsjhdby9
-    latency_weight = 1000 * math.exp(-1 / 1000 * p90_success_ms_latency)
+    latency_weight = 1000 * math.exp(-1 / 1000 * float(p90_success_ms_latency))
     failure_weight = math.exp(-30 * failure_rate)
     # TODO: integrate `mirror_cache_age` into the weight calculation
     weight = max(1, int(latency_weight * failure_weight))
