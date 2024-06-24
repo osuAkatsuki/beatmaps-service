@@ -2,11 +2,6 @@
 Provides an API aligned with the Cheesegull API Specification.
 
 API Spec: https://docs.ripple.moe/docs/cheesegull/cheesegull-api
-
-This module is a FastAPI router that provides the following endpoints:
-- GET /api/v1/cheesegull/b/{beatmap_id}
-- GET /api/v1/cheesegull/s/{beatmapset_id}
-- GET /api/v1/cheesegull/search
 """
 
 import logging
