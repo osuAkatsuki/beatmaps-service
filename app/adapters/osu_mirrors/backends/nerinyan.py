@@ -1,15 +1,15 @@
 import logging
 
-from app.adapters.beatmap_mirrors import BeatmapMirror
+from app.adapters.osu_mirrors.backends import AbstractBeatmapMirror
 
 
-class RippleMirror(BeatmapMirror):
-    name = "ripple"
-    base_url = "https://storage.ripple.moe"
+class NerinyanMirror(AbstractBeatmapMirror):
+    name = "nerinyan"
+    base_url = "https://api.nerinyan.moe"
 
     async def fetch_beatmap_zip_data(self, beatmapset_id: int) -> bytes | None:
         try:
-            logging.info(f"Fetching beatmapset osz2 from ripple: {beatmapset_id}")
+            logging.info(f"Fetching beatmapset osz2 from nerinyan: {beatmapset_id}")
             response = await self.http_client.get(
                 f"{self.base_url}/d/{beatmapset_id}",
             )
@@ -17,7 +17,7 @@ class RippleMirror(BeatmapMirror):
             return response.read()
         except Exception:
             logging.warning(
-                "Failed to fetch beatmap from ripple.moe",
+                "Failed to fetch beatmap from nerinyan.moe",
                 exc_info=True,
             )
             return None

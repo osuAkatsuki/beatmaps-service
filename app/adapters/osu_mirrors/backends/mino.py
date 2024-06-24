@@ -2,10 +2,10 @@ import logging
 
 import httpx
 
-from app.adapters.beatmap_mirrors import BeatmapMirror
+from app.adapters.osu_mirrors.backends import AbstractBeatmapMirror
 
 
-class MinoMirror(BeatmapMirror):
+class MinoMirror(AbstractBeatmapMirror):
     name = "mino"
     base_url = "https://central.catboy.best"
 

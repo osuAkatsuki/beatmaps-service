@@ -6,7 +6,7 @@ from typing import ClassVar
 import httpx
 
 
-class BeatmapMirror(ABC):
+class AbstractBeatmapMirror(ABC):
     name: ClassVar[str]
     base_url: ClassVar[str]
 
