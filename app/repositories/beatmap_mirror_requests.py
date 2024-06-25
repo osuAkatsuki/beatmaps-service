@@ -23,7 +23,7 @@ async def get_mirror_weight(mirror_name: str) -> int:
             SELECT (ended_at - started_at) * 1000 AS ms_elapsed,
             PERCENT_RANK() OVER (ORDER BY ended_at - started_at) p
             FROM beatmap_mirror_requests
-            WHERE started_at > NOW() - INTERVAL 1 HOUR
+            WHERE started_at > NOW() - INTERVAL 1 DAY
             AND mirror_name = :mirror_name
             AND success = 1
         )
@@ -41,7 +41,7 @@ async def get_mirror_weight(mirror_name: str) -> int:
         """\
         SELECT AVG(success = 0)
         FROM beatmap_mirror_requests
-        WHERE started_at > NOW() - INTERVAL 1 HOUR
+        WHERE started_at > NOW() - INTERVAL 1 DAY
         AND mirror_name = :mirror_name
         """,
         {"mirror_name": mirror_name},
