@@ -23,10 +23,10 @@ apps:
         failureThreshold: 5
       resources:
         limits:
-          cpu: 400m
+          cpu: 300m
           memory: 400Mi
         requests:
-          cpu: 300m
+          cpu: 150m
           memory: 300Mi
       env:
         - name: APP_COMPONENT
