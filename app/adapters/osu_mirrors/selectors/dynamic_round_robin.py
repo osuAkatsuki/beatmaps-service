@@ -45,3 +45,6 @@ class DynamicWeightedRoundRobinMirrorSelector(AbstractMirrorSelector):
 
             if self.mirrors[self.index].weight >= self.current_weight:
                 return self.mirrors[self.index]
+
+    def get_num_mirrors(self) -> int:
+        return len(self.mirrors)

@@ -35,6 +35,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
     availability and performance.
     """
     prev_mirror: AbstractBeatmapMirror | None = None
+    num_attempts = 0
 
     await BEATMAP_SELECTOR.update_all_mirror_and_selector_weights()
 
@@ -46,6 +47,15 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
             # because of an error on a single beatmapset
             continue
 
+        # Only retry up to 2x the number of mirrors
+        if num_attempts > BEATMAP_SELECTOR.get_num_mirrors() * 2:
+            logging.warning(
+                "Failed to fetch beatmapset osz2 from any mirror",
+                extra={"beatmapset_id": beatmapset_id},
+            )
+            return None
+
+        num_attempts += 1
         started_at = datetime.now()
 
         beatmap_zip_data: bytes | None = None
