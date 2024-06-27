@@ -1,6 +1,8 @@
 import logging
 from datetime import datetime
+from typing import TypeGuard
 
+from app.adapters.osu_mirrors.backends import AbstractBeatmapMirror
 from app.adapters.osu_mirrors.backends.mino import MinoMirror
 from app.adapters.osu_mirrors.backends.nerinyan import NerinyanMirror
 from app.adapters.osu_mirrors.backends.osu_direct import OsuDirectMirror
@@ -22,6 +24,10 @@ BEATMAP_SELECTOR = DynamicWeightedRoundRobinMirrorSelector(
 )
 
 
+def is_valid_zip_file(content: bytes | None) -> TypeGuard[bytes]:
+    return content is not None and content.startswith(ZIP_FILE_HEADER)
+
+
 async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
     """\
     Fetch a beatmapset .osz2 file by any means necessary, balancing upon
@@ -29,19 +35,23 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
     availability and performance.
     """
     started_at = datetime.now()
+    prev_mirror: AbstractBeatmapMirror | None = None
 
     await BEATMAP_SELECTOR.update_all_mirror_and_selector_weights()
 
     while True:
         mirror = BEATMAP_SELECTOR.select_mirror()
+        if mirror is prev_mirror:
+            # don't allow the same mirror to be run twice, to help
+            # prevent loops which cause the mirror to lose all weighting
+            # because of an error on a single beatmapset
+            continue
+
         beatmap_zip_data: bytes | None = None
         try:
             beatmap_zip_data = await mirror.fetch_beatmap_zip_data(beatmapset_id)
 
-            if beatmap_zip_data is not None and (
-                not beatmap_zip_data.startswith(ZIP_FILE_HEADER)
-                or len(beatmap_zip_data) < 20_000
-            ):
+            if not is_valid_zip_file(beatmap_zip_data):
                 raise ValueError("Received bad osz2 data from mirror")
         except Exception as exc:
             ended_at = datetime.now()
@@ -65,6 +75,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
                     "beatmapset_id": beatmapset_id,
                 },
             )
+            prev_mirror = mirror
             continue
         else:
             break
