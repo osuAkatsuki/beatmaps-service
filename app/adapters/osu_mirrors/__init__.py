@@ -34,7 +34,6 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
     multiple underlying beatmap mirrors to ensure the best possible
     availability and performance.
     """
-    started_at = datetime.now()
     prev_mirror: AbstractBeatmapMirror | None = None
 
     await BEATMAP_SELECTOR.update_all_mirror_and_selector_weights()
@@ -46,6 +45,8 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
             # prevent loops which cause the mirror to lose all weighting
             # because of an error on a single beatmapset
             continue
+
+        started_at = datetime.now()
 
         beatmap_zip_data: bytes | None = None
         try:
