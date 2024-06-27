@@ -1,6 +1,7 @@
 import logging
 
 from app.adapters.osu_mirrors.backends import AbstractBeatmapMirror
+from app.adapters.osu_mirrors.backends import MirrorRequestError
 
 
 class RippleMirror(AbstractBeatmapMirror):
@@ -13,11 +14,13 @@ class RippleMirror(AbstractBeatmapMirror):
             response = await self.http_client.get(
                 f"{self.base_url}/d/{beatmapset_id}",
             )
+            if response.status_code == 404:
+                return None
             response.raise_for_status()
             return response.read()
-        except Exception:
+        except Exception as exc:
             logging.warning(
                 "Failed to fetch beatmap from ripple.moe",
                 exc_info=True,
             )
-            return None
+            raise MirrorRequestError() from exc
