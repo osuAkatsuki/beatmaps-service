@@ -15,10 +15,6 @@ if TYPE_CHECKING:
 
 discord_webhooks_http_client = httpx.AsyncClient()
 
-beatmap_hook = (
-    b_hook if (b_hook := settings.DISCORD_BEATMAP_UPDATES_WEBHOOK_URL) else None
-)
-
 
 EDIT_COL = "4360181"
 EDIT_ICON = "https://cdn3.iconfinder.com/data/icons/bold-blue-glyphs-free-samples/32/Info_Circle_Symbol_Information_Letter-512.png"
@@ -193,13 +189,13 @@ async def wrap_hook(webhook_url: str, embed: Embed) -> None:
         )
 
 
-def schedule_hook(hook: str | None, embed: Embed) -> None:
+def schedule_hook(*, webhook_url: str | None, embed: Embed) -> None:
     """Performs a hook execution in a non-blocking manner."""
 
-    if not hook:
+    if not webhook_url:
         return None
 
-    job_scheduling.schedule_job(wrap_hook(hook, embed))
+    job_scheduling.schedule_job(wrap_hook(webhook_url, embed))
 
     logging.debug("Scheduled the performing of a discord webhook!")
     return None
@@ -219,4 +215,7 @@ def beatmap_status_change(
     embed.set_author(name="LESS Score Server", icon_url=EDIT_ICON)
     embed.set_footer(text="This is an automated action performed by the server.")
 
-    schedule_hook(beatmap_hook, embed)
+    schedule_hook(
+        webhook_url=settings.DISCORD_BEATMAP_UPDATES_WEBHOOK_URL,
+        embed=embed,
+    )
