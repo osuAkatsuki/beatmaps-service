@@ -67,6 +67,41 @@ class AkatsukiBeatmap(BaseModel):
         return f"[{self.url} {self.song_name}]"
 
 
+async def fetch_one_by_md5(beatmap_md5: str, /) -> AkatsukiBeatmap | None:
+    query = """\
+        SELECT * FROM beatmaps WHERE beatmap_md5 = :beatmap_md5
+    """
+    rec = await state.database.fetch_one(query, {"beatmap_md5": beatmap_md5})
+    if rec is None:
+        return None
+    return AkatsukiBeatmap(
+        beatmap_id=rec["beatmap_id"],
+        beatmapset_id=rec["beatmapset_id"],
+        beatmap_md5=rec["beatmap_md5"],
+        song_name=rec["song_name"],
+        file_name=rec["file_name"],
+        ar=rec["ar"],
+        od=rec["od"],
+        mode=rec["mode"],
+        max_combo=rec["max_combo"],
+        hit_length=rec["hit_length"],
+        bpm=rec["bpm"],
+        ranked=rec["ranked"],
+        latest_update=rec["latest_update"],
+        ranked_status_freezed=rec["ranked_status_freezed"],
+        playcount=rec["playcount"],
+        passcount=rec["passcount"],
+        rankedby=rec["rankedby"],
+        rating=rec["rating"],
+        bancho_ranked_status=rec["bancho_ranked_status"],
+        count_circles=rec["count_circles"],
+        count_spinners=rec["count_spinners"],
+        count_sliders=rec["count_sliders"],
+        bancho_creator_id=rec["bancho_creator_id"],
+        bancho_creator_name=rec["bancho_creator_name"],
+    )
+
+
 async def fetch_one_by_id(beatmap_id: int, /) -> AkatsukiBeatmap | None:
     query = """\
         SELECT * FROM beatmaps WHERE beatmap_id = :beatmap_id

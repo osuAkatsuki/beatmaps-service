@@ -57,14 +57,20 @@ class Beatmap(BaseModel):
     audio_unavailable: int
 
 
-async def get_beatmap_by_id(beatmap_id: int) -> Beatmap | None:
+async def get_beatmap(
+    *,
+    beatmap_id: int | None = None,
+    beatmap_md5: str | None = None,
+) -> Beatmap | None:
+    assert [beatmap_id, beatmap_md5].count(None) == 1
+
     osu_api_response_data: list[dict[str, Any]] | None = None
     try:
         response = await osu_api_v1_http_client.get(
             "get_beatmaps",
             params={
                 "k": random.choice(settings.OSU_API_V1_API_KEYS_POOL),
-                "b": beatmap_id,
+                **({"b": beatmap_id} if beatmap_id else {"h": beatmap_md5}),
             },
         )
         if response.status_code == 404:

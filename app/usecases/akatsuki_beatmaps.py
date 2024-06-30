@@ -71,7 +71,9 @@ async def _update_from_osu_api(old_beatmap: AkatsukiBeatmap) -> AkatsukiBeatmap 
     if not old_beatmap.deserves_update:
         return old_beatmap
 
-    new_osu_api_v1_beatmap = await osu_api_v1.get_beatmap_by_id(old_beatmap.beatmap_id)
+    new_osu_api_v1_beatmap = await osu_api_v1.get_beatmap(
+        beatmap_id=old_beatmap.beatmap_id,
+    )
     if new_osu_api_v1_beatmap is None:
         # it's now unsubmitted!
 
@@ -138,7 +140,28 @@ async def _update_from_osu_api(old_beatmap: AkatsukiBeatmap) -> AkatsukiBeatmap 
 async def fetch_one_by_id(beatmap_id: int) -> AkatsukiBeatmap | None:
     beatmap = await akatsuki_beatmaps.fetch_one_by_id(beatmap_id)
     if beatmap is None:
-        osu_api_v1_beatmap = await osu_api_v1.get_beatmap_by_id(beatmap_id)
+        osu_api_v1_beatmap = await osu_api_v1.get_beatmap(beatmap_id=beatmap_id)
+        if osu_api_v1_beatmap is None:
+            return None
+
+        new_beatmap = _parse_akatsuki_beatmap_from_osu_api_v1_response(
+            osu_api_v1_beatmap,
+        )
+        beatmap = await akatsuki_beatmaps.create_or_replace(new_beatmap)
+
+    elif beatmap.deserves_update:
+        beatmap = await _update_from_osu_api(beatmap)
+        if beatmap is None:
+            # (we may have deleted the map during the update)
+            return None
+
+    return beatmap
+
+
+async def fetch_one_by_md5(beatmap_md5: str) -> AkatsukiBeatmap | None:
+    beatmap = await akatsuki_beatmaps.fetch_one_by_md5(beatmap_md5)
+    if beatmap is None:
+        osu_api_v1_beatmap = await osu_api_v1.get_beatmap(beatmap_md5=beatmap_md5)
         if osu_api_v1_beatmap is None:
             return None
 
