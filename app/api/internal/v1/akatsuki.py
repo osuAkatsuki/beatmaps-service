@@ -39,7 +39,7 @@ async def get_beatmap(
     logging.info(
         "Serving Akatsuki beatmap",
         extra={
-            "beatmap": beatmap.model_dump_json(),
+            "beatmap": beatmap.model_dump(),
             "client_ip_address": client_ip_address,
             "client_user_agent": client_user_agent,
         },
