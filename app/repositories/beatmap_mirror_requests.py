@@ -1,5 +1,6 @@
 import math
 from datetime import datetime
+from enum import StrEnum
 
 from pydantic import BaseModel
 
@@ -10,12 +11,29 @@ from app import state
 MIRROR_INITIAL_WEIGHT = 100
 
 
+class BeatmapMirrorResource(StrEnum):
+    OSZ2_FILE = "osz2_file"
+    BACKGROUND_IMAGE = "background_image"
+
+
+class BeatmapMirrorRequest(BaseModel):
+    request_url: str
+    api_key_id: str | None
+    mirror_name: str
+    success: bool
+    started_at: datetime
+    ended_at: datetime
+    response_size: int
+    response_error: str | None
+    resource: BeatmapMirrorResource
+
+
 class BeatmapMirrorScore(BaseModel):
     mirror_name: str
     score: float
 
 
-async def get_mirror_weight(mirror_name: str) -> int:
+async def get_mirror_weight(mirror_name: str, resource: BeatmapMirrorResource) -> int:
     """Give the mirror a weighting based on its latency and failure rate."""
     p75_success_ms_latency = await state.database.fetch_val(
         """\
@@ -25,6 +43,7 @@ async def get_mirror_weight(mirror_name: str) -> int:
             FROM beatmap_mirror_requests
             WHERE started_at > NOW() - INTERVAL 4 HOUR
             AND mirror_name = :mirror_name
+            AND resource = :resource
             AND success = 1
         )
         SELECT DISTINCT first_value(ms_elapsed) OVER (
@@ -32,7 +51,7 @@ async def get_mirror_weight(mirror_name: str) -> int:
         ) p75_success_ms_latency
         FROM request_latencies
         """,
-        {"mirror_name": mirror_name},
+        {"mirror_name": mirror_name, "resource": resource.name},
     )
     if p75_success_ms_latency is None:
         return MIRROR_INITIAL_WEIGHT
@@ -43,8 +62,9 @@ async def get_mirror_weight(mirror_name: str) -> int:
         FROM beatmap_mirror_requests
         WHERE started_at > NOW() - INTERVAL 4 HOUR
         AND mirror_name = :mirror_name
+        AND resource = :resource
         """,
-        {"mirror_name": mirror_name},
+        {"mirror_name": mirror_name, "resource": resource.name},
     )
     if failure_rate is None:
         return MIRROR_INITIAL_WEIGHT
@@ -66,15 +86,16 @@ async def create(
     ended_at: datetime,
     response_size: int,
     response_error: str | None,
-) -> None:
+    resource: BeatmapMirrorResource,
+) -> BeatmapMirrorRequest:
     query = """\
         INSERT INTO beatmap_mirror_requests (
             request_url, api_key_id, mirror_name, success, started_at,
-            ended_at, response_size, response_error
+            ended_at, response_size, response_error, resource
         )
         VALUES (
             :request_url, :api_key_id, :mirror_name, :success, :started_at,
-            :ended_at, :response_size, :response_error
+            :ended_at, :response_size, :response_error, :resource
         )
     """
     await state.database.execute(
@@ -88,5 +109,17 @@ async def create(
             "ended_at": ended_at,
             "response_size": response_size,
             "response_error": response_error,
+            "resource": resource.name,
         },
+    )
+    return BeatmapMirrorRequest(
+        request_url=request_url,
+        api_key_id=api_key_id,
+        mirror_name=mirror_name,
+        success=success,
+        started_at=started_at,
+        ended_at=ended_at,
+        response_size=response_size,
+        response_error=response_error,
+        resource=resource,
     )

@@ -9,6 +9,7 @@ from app.adapters.osu_mirrors.selectors.dynamic_round_robin import (
     DynamicWeightedRoundRobinMirrorSelector,
 )
 from app.repositories import beatmap_mirror_requests
+from app.repositories.beatmap_mirror_requests import BeatmapMirrorResource
 
 ZIP_FILE_HEADER = b"PK\x03\x04"
 
@@ -73,6 +74,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
                 ended_at=ended_at,
                 response_size=len(beatmap_zip_data) if beatmap_zip_data else 0,
                 response_error=str(exc),
+                resource=BeatmapMirrorResource.OSZ2_FILE,
             )
             await BEATMAP_SELECTOR.update_all_mirror_and_selector_weights()
             logging.warning(
@@ -100,6 +102,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
         ended_at=ended_at,
         response_size=len(beatmap_zip_data) if beatmap_zip_data else 0,
         response_error=None,
+        resource=BeatmapMirrorResource.OSZ2_FILE,
     )
     await BEATMAP_SELECTOR.update_all_mirror_and_selector_weights()
 
