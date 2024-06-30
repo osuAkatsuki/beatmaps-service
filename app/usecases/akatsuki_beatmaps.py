@@ -9,7 +9,7 @@ from app.repositories import akatsuki_beatmaps
 from app.repositories.akatsuki_beatmaps import AkatsukiBeatmap
 
 IGNORED_BEATMAP_CHARS = dict.fromkeys(map(ord, r':\/*<>?"|'), None)
-FROZEN_STATUSES = (RankedStatus.RANKED, RankedStatus.APPROVED, RankedStatus.LOVED)
+FROZEN_STATUSES = {RankedStatus.RANKED, RankedStatus.APPROVED, RankedStatus.LOVED}
 
 
 def _parse_akatsuki_beatmap_from_osu_api_v1_response(
