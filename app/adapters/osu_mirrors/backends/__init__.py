@@ -37,7 +37,7 @@ class AbstractBeatmapMirror(ABC):
         self,
         beatmapset_id: int,
     ) -> BeatmapMirrorResponse[bytes | None]:
-        """Fetch a beatmap's .osz2 file content from a beatmap mirror."""
+        """Fetch a beatmap's .osz file content from a beatmap mirror."""
         raise NotImplementedError()
 
     async def fetch_beatmap_background_image(

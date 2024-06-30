@@ -19,7 +19,7 @@ class GatariMirror(AbstractBeatmapMirror):
         beatmapset_id: int,
     ) -> BeatmapMirrorResponse[bytes | None]:
         try:
-            logging.info(f"Fetching beatmapset osz2 from gatari: {beatmapset_id}")
+            logging.info(f"Fetching beatmapset osz from gatari: {beatmapset_id}")
             response = await self.http_client.get(
                 f"{self.base_url}/d/{beatmapset_id}",
                 follow_redirects=True,

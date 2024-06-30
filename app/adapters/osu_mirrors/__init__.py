@@ -45,7 +45,7 @@ def is_valid_zip_file(content: bytes) -> bool:
 
 async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
     """\
-    Fetch a beatmapset .osz2 file by any means necessary, balancing upon
+    Fetch a beatmapset .osz file by any means necessary, balancing upon
     multiple underlying beatmap mirrors to ensure the best possible
     availability and performance.
     """
@@ -65,7 +65,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
         # Only retry up to 2x the number of mirrors
         if num_attempts > OSZ2_FILE_MIRROR_SELECTOR.get_num_mirrors() * 2:
             logging.warning(
-                "Failed to fetch beatmapset osz2 from any mirror",
+                "Failed to fetch beatmapset osz from any mirror",
                 extra={"beatmapset_id": beatmapset_id},
             )
             return None
@@ -79,7 +79,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
             if mirror_response.data is not None and not is_valid_zip_file(
                 mirror_response.data,
             ):
-                raise ValueError("Received bad osz2 data from mirror")
+                raise ValueError("Received bad osz data from mirror")
         except Exception as exc:
             ended_at = datetime.now()
             await beatmap_mirror_requests.create(
@@ -106,7 +106,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
             )
             await OSZ2_FILE_MIRROR_SELECTOR.update_all_mirror_and_selector_weights()
             logging.warning(
-                "Failed to fetch beatmapset osz2 from mirror",
+                "Failed to fetch beatmapset osz from mirror",
                 exc_info=True,
                 extra={
                     "response": (
@@ -146,7 +146,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
     ms_elapsed = (ended_at.timestamp() - started_at.timestamp()) * 1000
 
     logging.info(
-        "Served beatmapset osz2 from mirror",
+        "Served beatmapset osz from mirror",
         extra={
             "mirror_name": mirror.name,
             "mirror_weight": mirror.weight,

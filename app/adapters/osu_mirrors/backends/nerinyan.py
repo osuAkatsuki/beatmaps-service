@@ -19,7 +19,7 @@ class NerinyanMirror(AbstractBeatmapMirror):
         beatmapset_id: int,
     ) -> BeatmapMirrorResponse[bytes | None]:
         try:
-            logging.info(f"Fetching beatmapset osz2 from nerinyan: {beatmapset_id}")
+            logging.info(f"Fetching beatmapset osz from nerinyan: {beatmapset_id}")
             response = await self.http_client.get(
                 f"{self.base_url}/d/{beatmapset_id}",
             )

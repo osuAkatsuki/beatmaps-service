@@ -19,7 +19,7 @@ class RippleMirror(AbstractBeatmapMirror):
         beatmapset_id: int,
     ) -> BeatmapMirrorResponse[bytes | None]:
         try:
-            logging.info(f"Fetching beatmapset osz2 from ripple: {beatmapset_id}")
+            logging.info(f"Fetching beatmapset osz from ripple: {beatmapset_id}")
             response = await self.http_client.get(
                 f"{self.base_url}/d/{beatmapset_id}",
             )
