@@ -28,12 +28,14 @@ class OsuDirectMirror(AbstractBeatmapMirror):
             if response.status_code == 404:
                 return BeatmapMirrorResponse(
                     data=None,
+                    is_success=True,
                     request_url=str(response.request.url),
                     status_code=response.status_code,
                 )
             response.raise_for_status()
             return BeatmapMirrorResponse(
                 data=response.read(),
+                is_success=True,
                 request_url=str(response.request.url),
                 status_code=response.status_code,
             )
@@ -44,6 +46,7 @@ class OsuDirectMirror(AbstractBeatmapMirror):
             )
             return BeatmapMirrorResponse(
                 data=None,
+                is_success=False,
                 request_url=str(response.request.url) if response else None,
                 status_code=response.status_code if response else None,
                 error_message=str(exc),
@@ -64,12 +67,14 @@ class OsuDirectMirror(AbstractBeatmapMirror):
             if response.status_code == 404:
                 return BeatmapMirrorResponse(
                     data=None,
+                    is_success=True,
                     request_url=str(response.request.url),
                     status_code=response.status_code,
                 )
             response.raise_for_status()
             return BeatmapMirrorResponse(
                 data=response.read(),
+                is_success=True,
                 request_url=str(response.request.url),
                 status_code=response.status_code,
             )
@@ -80,6 +85,7 @@ class OsuDirectMirror(AbstractBeatmapMirror):
             )
             return BeatmapMirrorResponse(
                 data=None,
+                is_success=False,
                 request_url=str(response.request.url) if response else None,
                 status_code=response.status_code if response else None,
                 error_message=str(exc),

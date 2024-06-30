@@ -15,6 +15,7 @@ T = TypeVar("T", covariant=True)
 @dataclass
 class BeatmapMirrorResponse(Generic[T]):
     data: T
+    is_success: bool
     request_url: str | None
     status_code: int | None
     error_message: str | None = None
