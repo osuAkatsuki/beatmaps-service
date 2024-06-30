@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 
 from app.adapters.osu_mirrors.backends import AbstractBeatmapMirror
+from app.adapters.osu_mirrors.backends import BeatmapMirrorResponse
 from app.adapters.osu_mirrors.backends.mino import MinoMirror
 from app.adapters.osu_mirrors.backends.nerinyan import NerinyanMirror
 from app.adapters.osu_mirrors.backends.osu_direct import OsuDirectMirror
@@ -72,21 +73,34 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
         num_attempts += 1
         started_at = datetime.now()
 
-        beatmap_zip_data: bytes | None = None
+        mirror_response: BeatmapMirrorResponse[bytes | None] | None = None
         try:
-            beatmap_zip_data = await mirror.fetch_beatmap_zip_data(beatmapset_id)
-            if beatmap_zip_data is not None and not is_valid_zip_file(beatmap_zip_data):
+            mirror_response = await mirror.fetch_beatmap_zip_data(beatmapset_id)
+            if mirror_response.data is not None and not is_valid_zip_file(
+                mirror_response.data,
+            ):
                 raise ValueError("Received bad osz2 data from mirror")
         except Exception as exc:
             ended_at = datetime.now()
             await beatmap_mirror_requests.create(
-                request_url=f"{mirror.base_url}/d/{beatmapset_id}",
+                request_url=(
+                    mirror_response.request_url if mirror_response else "unavailable"
+                ),
                 api_key_id=None,
                 mirror_name=mirror.name,
                 success=False,
                 started_at=started_at,
                 ended_at=ended_at,
-                response_size=len(beatmap_zip_data) if beatmap_zip_data else 0,
+                response_status_code=(
+                    mirror_response.status_code
+                    if mirror_response and mirror_response.status_code
+                    else None
+                ),
+                response_size=(
+                    len(mirror_response.data)
+                    if mirror_response and mirror_response.data
+                    else 0
+                ),
                 response_error=str(exc),
                 resource=MirrorResource.OSZ2_FILE,
             )
@@ -95,6 +109,14 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
                 "Failed to fetch beatmapset osz2 from mirror",
                 exc_info=True,
                 extra={
+                    "response": (
+                        {
+                            "url": mirror_response.request_url,
+                            "status_code": mirror_response.status_code,
+                        }
+                        if mirror_response is not None
+                        else None
+                    ),
                     "mirror_name": mirror.name,
                     "mirror_weight": mirror.weight,
                     "beatmapset_id": beatmapset_id,
@@ -114,7 +136,8 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
         success=True,
         started_at=started_at,
         ended_at=ended_at,
-        response_size=len(beatmap_zip_data) if beatmap_zip_data else 0,
+        response_status_code=mirror_response.status_code,
+        response_size=len(mirror_response.data) if mirror_response.data else 0,
         response_error=None,
         resource=MirrorResource.OSZ2_FILE,
     )
@@ -129,10 +152,10 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
             "mirror_weight": mirror.weight,
             "beatmapset_id": beatmapset_id,
             "ms_elapsed": ms_elapsed,
-            "data_size": len(beatmap_zip_data) if beatmap_zip_data is not None else 0,
+            "data_size": len(mirror_response.data) if mirror_response.data else 0,
         },
     )
-    return beatmap_zip_data
+    return mirror_response.data
 
 
 async def fetch_beatmap_background_image(beatmap_id: int) -> bytes | None:
@@ -165,22 +188,31 @@ async def fetch_beatmap_background_image(beatmap_id: int) -> bytes | None:
         num_attempts += 1
         started_at = datetime.now()
 
-        beatmap_background_image: bytes | None = None
+        mirror_response: BeatmapMirrorResponse[bytes | None] | None = None
         try:
-            beatmap_background_image = await mirror.fetch_beatmap_background_image(
+            mirror_response = await mirror.fetch_beatmap_background_image(
                 beatmap_id,
             )
         except Exception as exc:
             ended_at = datetime.now()
             await beatmap_mirror_requests.create(
-                request_url=f"{mirror.base_url}/b/{beatmap_id}",
+                request_url=(
+                    mirror_response.request_url if mirror_response else "unavailable"
+                ),
                 api_key_id=None,
                 mirror_name=mirror.name,
                 success=False,
                 started_at=started_at,
                 ended_at=ended_at,
+                response_status_code=(
+                    mirror_response.status_code
+                    if mirror_response and mirror_response.status_code
+                    else None
+                ),
                 response_size=(
-                    len(beatmap_background_image) if beatmap_background_image else 0
+                    len(mirror_response.data)
+                    if mirror_response and mirror_response.data
+                    else 0
                 ),
                 response_error=str(exc),
                 resource=MirrorResource.BACKGROUND_IMAGE,
@@ -190,6 +222,14 @@ async def fetch_beatmap_background_image(beatmap_id: int) -> bytes | None:
                 "Failed to fetch beatmap background image from mirror",
                 exc_info=True,
                 extra={
+                    "response": (
+                        {
+                            "url": mirror_response.request_url,
+                            "status_code": mirror_response.status_code,
+                        }
+                        if mirror_response is not None
+                        else None
+                    ),
                     "mirror_name": mirror.name,
                     "mirror_weight": mirror.weight,
                     "beatmap_id": beatmap_id,
@@ -203,13 +243,14 @@ async def fetch_beatmap_background_image(beatmap_id: int) -> bytes | None:
     ended_at = datetime.now()
 
     await beatmap_mirror_requests.create(
-        request_url=f"{mirror.base_url}/b/{beatmap_id}",
+        request_url=mirror_response.request_url,
         api_key_id=None,
         mirror_name=mirror.name,
         success=True,
         started_at=started_at,
         ended_at=ended_at,
-        response_size=len(beatmap_background_image) if beatmap_background_image else 0,
+        response_status_code=mirror_response.status_code,
+        response_size=len(mirror_response.data) if mirror_response.data else 0,
         response_error=None,
         resource=MirrorResource.BACKGROUND_IMAGE,
     )

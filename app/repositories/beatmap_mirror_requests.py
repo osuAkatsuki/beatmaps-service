@@ -23,6 +23,7 @@ class BeatmapMirrorRequest(BaseModel):
     success: bool
     started_at: datetime
     ended_at: datetime
+    response_status_code: int
     response_size: int
     response_error: str | None
     resource: MirrorResource
@@ -84,6 +85,7 @@ async def create(
     success: bool,
     started_at: datetime,
     ended_at: datetime,
+    response_status_code: int | None,
     response_size: int,
     response_error: str | None,
     resource: MirrorResource,
@@ -91,11 +93,11 @@ async def create(
     query = """\
         INSERT INTO beatmap_mirror_requests (
             request_url, api_key_id, mirror_name, success, started_at,
-            ended_at, response_size, response_error, resource
+            ended_at, response_status_code, response_size, response_error, resource
         )
         VALUES (
             :request_url, :api_key_id, :mirror_name, :success, :started_at,
-            :ended_at, :response_size, :response_error, :resource
+            :ended_at, :response_status_code, :response_size, :response_error, :resource
         )
     """
     await state.database.execute(
@@ -107,6 +109,7 @@ async def create(
             "success": success,
             "started_at": started_at,
             "ended_at": ended_at,
+            "response_status_code": response_status_code,
             "response_size": response_size,
             "response_error": response_error,
             "resource": resource.name,
@@ -119,6 +122,7 @@ async def create(
         success=success,
         started_at=started_at,
         ended_at=ended_at,
+        response_status_code=response_status_code,
         response_size=response_size,
         response_error=response_error,
         resource=resource,
