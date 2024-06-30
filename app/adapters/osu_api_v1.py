@@ -99,7 +99,7 @@ class Beatmap(BaseModel):
     audio_unavailable: int
 
 
-async def get_beatmap(beatmap_id: int) -> list[Beatmap] | None:
+async def get_beatmap_by_id(beatmap_id: int) -> Beatmap | None:
     osu_api_response_data: list[dict[str, Any]] | None = None
     try:
         response = await osu_api_v1_http_client.get(
@@ -111,10 +111,14 @@ async def get_beatmap(beatmap_id: int) -> list[Beatmap] | None:
         )
         if response.status_code == 404:
             return None
+        if response.status_code == 403:
+            raise ValueError("osu api is down") from None
         response.raise_for_status()
         osu_api_response_data = response.json()
+        if osu_api_response_data == []:
+            return None
         assert osu_api_response_data is not None
-        return [Beatmap(**rec) for rec in osu_api_response_data]
+        return Beatmap(**osu_api_response_data[0])
     except Exception:
         logging.exception(
             "Failed to fetch beatmap from osu! API v1",

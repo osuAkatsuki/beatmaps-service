@@ -1,3 +1,6 @@
+from datetime import datetime
+from datetime import timedelta
+
 from pydantic import BaseModel
 
 from app import state
@@ -30,6 +33,38 @@ class AkatsukiBeatmap(BaseModel):
     count_sliders: int | None
     bancho_creator_id: int | None
     bancho_creator_name: str | None
+
+    @property
+    def deserves_update(self) -> bool:
+        match self.ranked:
+            case RankedStatus.QUALIFIED:
+                update_interval = timedelta(minutes=5)
+            case RankedStatus.PENDING:
+                update_interval = timedelta(minutes=10)
+            case RankedStatus.LOVED:
+                # loved maps can *technically* be updated
+                update_interval = timedelta(days=1)
+            case RankedStatus.RANKED | RankedStatus.APPROVED:
+                # in very rare cases, the osu! team has updated ranked/appvoed maps
+                # this is usually done to remove things like inappropriate content
+                update_interval = timedelta(days=1)
+            case _:
+                raise NotImplementedError(f"Unknown ranked status: {self.ranked}")
+
+        last_updated = datetime.fromtimestamp(self.latest_update)
+        return last_updated <= (datetime.now() - update_interval)
+
+    @property
+    def url(self) -> str:
+        return f"https://osu.ppy.sh/beatmaps/{self.id}"
+
+    @property
+    def set_url(self) -> str:
+        return f"https://osu.ppy.sh/beatmapsets/{self.beatmapset_id}"
+
+    @property
+    def embed(self) -> str:
+        return f"[{self.url} {self.song_name}]"
 
 
 async def fetch_one_by_id(beatmap_id: int, /) -> AkatsukiBeatmap | None:
@@ -67,9 +102,9 @@ async def fetch_one_by_id(beatmap_id: int, /) -> AkatsukiBeatmap | None:
     )
 
 
-async def create(beatmap: AkatsukiBeatmap) -> AkatsukiBeatmap:
+async def create_or_replace(beatmap: AkatsukiBeatmap) -> AkatsukiBeatmap:
     query = """\
-        INSERT INTO beatmaps (
+        REPLACE INTO beatmaps (
             beatmap_id, beatmapset_id, beatmap_md5, song_name, file_name,
             ar, od, mode, max_combo, hit_length, bpm, ranked, latest_update,
             ranked_status_freezed, playcount, passcount, rankedby, rating,

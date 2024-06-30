@@ -25,3 +25,5 @@ DB_PASS = os.environ["DB_PASS"]
 DB_HOST = os.environ["DB_HOST"]
 DB_PORT = int(os.environ["DB_PORT"])
 DB_NAME = os.environ["DB_NAME"]
+
+DISCORD_BEATMAP_UPDATES_WEBHOOK_URL = os.environ["DISCORD_BEATMAP_UPDATES_WEBHOOK_URL"]
