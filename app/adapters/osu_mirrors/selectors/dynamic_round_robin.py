@@ -3,11 +3,17 @@ import math
 from app.adapters.osu_mirrors.backends import AbstractBeatmapMirror
 from app.adapters.osu_mirrors.selectors import AbstractMirrorSelector
 from app.repositories import beatmap_mirror_requests
+from app.repositories.beatmap_mirror_requests import MirrorResource
 
 
 class DynamicWeightedRoundRobinMirrorSelector(AbstractMirrorSelector):
-    def __init__(self, mirrors: list[AbstractBeatmapMirror]) -> None:
+    def __init__(
+        self,
+        mirrors: list[AbstractBeatmapMirror],
+        resource: MirrorResource,
+    ) -> None:
         self.mirrors = mirrors
+        self.resource = resource
         self.index = -1
         self.current_weight = 0
         self.max_weight = max(mirror.weight for mirror in mirrors)
@@ -26,6 +32,7 @@ class DynamicWeightedRoundRobinMirrorSelector(AbstractMirrorSelector):
         for beatmap_mirror in self.mirrors:
             beatmap_mirror.weight = await beatmap_mirror_requests.get_mirror_weight(
                 beatmap_mirror.name,
+                self.resource,
             )
 
         self.max_weight = max(mirror.weight for mirror in self.mirrors)
