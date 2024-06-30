@@ -76,7 +76,8 @@ async def _update_from_osu_api(old_beatmap: AkatsukiBeatmap) -> AkatsukiBeatmap 
         beatmap_id=old_beatmap.beatmap_id,
     )
     if new_osu_api_v1_beatmap is None:
-        # it's now unsubmitted!
+        # The map has been unsubmitted by the mapper or staff
+        # on the official osu! servers. We'll delete it as well.
         logging.info(
             "Deleting unsubmitted beatmap",
             extra={"beatmap": old_beatmap.model_dump()},
