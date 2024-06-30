@@ -221,3 +221,10 @@ async def create_or_replace(beatmap: AkatsukiBeatmap) -> AkatsukiBeatmap:
         bancho_creator_id=rec["bancho_creator_id"],
         bancho_creator_name=rec["bancho_creator_name"],
     )
+
+
+async def delete_by_md5(beatmap_md5: str, /) -> None:
+    await state.database.execute(
+        "DELETE FROM beatmaps WHERE beatmap_md5 = :beatmap_md5",
+        {"beatmap_md5": beatmap_md5},
+    )

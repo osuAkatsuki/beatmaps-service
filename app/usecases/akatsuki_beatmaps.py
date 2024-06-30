@@ -1,7 +1,6 @@
 import logging
 import time
 
-from app import state
 from app.adapters import discord_webhooks
 from app.adapters import osu_api_v1
 from app.common_models import RankedStatus
@@ -81,11 +80,7 @@ async def _update_from_osu_api(old_beatmap: AkatsukiBeatmap) -> AkatsukiBeatmap 
             "Deleting unsubmitted beatmap",
             extra={"beatmap": old_beatmap.model_dump()},
         )
-        await state.database.execute(
-            "DELETE FROM beatmaps WHERE beatmap_md5 = :old_md5",
-            {"old_md5": old_beatmap.beatmap_md5},
-        )
-
+        await akatsuki_beatmaps.delete_by_md5(old_beatmap.beatmap_md5)
         return None
 
     new_beatmap = _parse_akatsuki_beatmap_from_osu_api_v1_response(
@@ -99,10 +94,7 @@ async def _update_from_osu_api(old_beatmap: AkatsukiBeatmap) -> AkatsukiBeatmap 
             "Deleting old beatmap",
             extra={"old_beatmap": old_beatmap.model_dump()},
         )
-        await state.database.execute(
-            "DELETE FROM beatmaps WHERE beatmap_md5 = :old_md5",
-            {"old_md5": old_beatmap.beatmap_md5},
-        )
+        await akatsuki_beatmaps.delete_by_md5(old_beatmap.beatmap_md5)
     else:
         # the map may have changed in some ways (e.g. ranked status),
         # but we want to make sure to keep our stats, because the map
