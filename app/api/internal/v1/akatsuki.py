@@ -36,7 +36,7 @@ async def get_beatmap(
     else:
         raise RuntimeError("unreachable")
 
-    logging.info(
+    logging.debug(
         "Serving Akatsuki beatmap",
         extra={
             "beatmap": beatmap.model_dump(),
