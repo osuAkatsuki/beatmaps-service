@@ -22,7 +22,7 @@ from app.api.responses import JSONResponse
 from app.common_models import GameMode
 from app.common_models import RankedStatus
 
-router = APIRouter(tags=["Cheesegull API"])
+router = APIRouter(tags=["(Public) Cheesegull API"])
 
 
 class CheesegullBeatmap(BaseModel):
