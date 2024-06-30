@@ -52,7 +52,7 @@ async def get_mirror_weight(mirror_name: str, resource: MirrorResource) -> int:
         ) p75_success_ms_latency
         FROM request_latencies
         """,
-        {"mirror_name": mirror_name, "resource": resource.name},
+        {"mirror_name": mirror_name, "resource": resource.value},
     )
     if p75_success_ms_latency is None:
         return MIRROR_INITIAL_WEIGHT
@@ -65,7 +65,7 @@ async def get_mirror_weight(mirror_name: str, resource: MirrorResource) -> int:
         AND mirror_name = :mirror_name
         AND resource = :resource
         """,
-        {"mirror_name": mirror_name, "resource": resource.name},
+        {"mirror_name": mirror_name, "resource": resource.value},
     )
     if failure_rate is None:
         return MIRROR_INITIAL_WEIGHT
@@ -112,7 +112,7 @@ async def create(
             "response_status_code": response_status_code,
             "response_size": response_size,
             "response_error": response_error,
-            "resource": resource.name,
+            "resource": resource.value,
         },
     )
     return BeatmapMirrorRequest(
