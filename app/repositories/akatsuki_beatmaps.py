@@ -56,7 +56,7 @@ class AkatsukiBeatmap(BaseModel):
 
     @property
     def url(self) -> str:
-        return f"https://osu.ppy.sh/beatmaps/{self.id}"
+        return f"https://osu.ppy.sh/beatmaps/{self.beatmap_id}"
 
     @property
     def set_url(self) -> str:
