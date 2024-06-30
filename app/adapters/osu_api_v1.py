@@ -114,8 +114,6 @@ async def fetch_beatmap_osu_file_data(beatmap_id: int) -> bytes | None:
     except Exception:
         logging.exception(
             "Failed to fetch beatmap osu file from osu! API v1",
-            extra={
-                "beatmap_id": beatmap_id,
-            },
+            extra={"beatmap_id": beatmap_id},
         )
         raise
