@@ -75,10 +75,11 @@ async def fetch_one_beatmap(
             },
         )
         logging.info(
-            "Made authorized request to the v1 osu! api",
+            "Made request to the v1 osu! api",
             extra={
                 "endpoint": "get_beatmaps",
                 "api_key_last4": osu_api_v1_key[-4:],
+                "authorized": True,
             },
         )
         if response.status_code == 404:
@@ -105,6 +106,13 @@ async def fetch_one_beatmap(
 async def fetch_beatmap_osu_file_data(beatmap_id: int) -> bytes | None:
     try:
         response = await osu_api_v1_http_client.get(f"osu/{beatmap_id}")
+        logging.info(
+            "Made request to the v1 osu! api",
+            extra={
+                "endpoint": "osu_file",
+                "authorized": False,
+            },
+        )
         if response.status_code == 404:
             return None
         if response.status_code == 403:
