@@ -9,7 +9,7 @@ import httpx
 
 from app.repositories.beatmap_mirror_requests import MirrorResource
 
-T = TypeVar("T", contravariant=True)
+T = TypeVar("T", covariant=True)
 
 
 class MirrorRequestError(Exception):
