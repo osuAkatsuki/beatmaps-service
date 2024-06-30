@@ -66,11 +66,19 @@ async def fetch_one_beatmap(
 
     osu_api_response_data: list[dict[str, Any]] | None = None
     try:
+        osu_api_v1_key = random.choice(settings.OSU_API_V1_API_KEYS_POOL)
         response = await osu_api_v1_http_client.get(
             "get_beatmaps",
             params={
-                "k": random.choice(settings.OSU_API_V1_API_KEYS_POOL),
+                "k": osu_api_v1_key,
                 **({"b": beatmap_id} if beatmap_id else {"h": beatmap_md5}),
+            },
+        )
+        logging.info(
+            "Made authorized request to the v1 osu! api",
+            extra={
+                "endpoint": "get_beatmaps",
+                "api_key_last4": osu_api_v1_key[-4:],
             },
         )
         if response.status_code == 404:
