@@ -14,8 +14,6 @@ FROZEN_STATUSES = (RankedStatus.RANKED, RankedStatus.APPROVED, RankedStatus.LOVE
 def _parse_akatsuki_beatmap_from_osu_api_v1_response(
     osu_api_beatmap: osu_api_v1.Beatmap,
 ) -> AkatsukiBeatmap:
-    # TODO: make sure we are maintaining rules from score-service
-
     filename = (
         ("{artist} - {title} ({creator}) [{version}].osu")
         .format(
