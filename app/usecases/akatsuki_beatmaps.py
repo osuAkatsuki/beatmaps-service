@@ -1,3 +1,4 @@
+import logging
 import time
 
 from app import state
@@ -76,7 +77,10 @@ async def _update_from_osu_api(old_beatmap: AkatsukiBeatmap) -> AkatsukiBeatmap 
     )
     if new_osu_api_v1_beatmap is None:
         # it's now unsubmitted!
-
+        logging.info(
+            "Deleting unsubmitted beatmap",
+            extra={"beatmap": old_beatmap.model_dump()},
+        )
         await state.database.execute(
             "DELETE FROM beatmaps WHERE beatmap_md5 = :old_md5",
             {"old_md5": old_beatmap.beatmap_md5},
@@ -91,6 +95,10 @@ async def _update_from_osu_api(old_beatmap: AkatsukiBeatmap) -> AkatsukiBeatmap 
     # handle deleting the old beatmap etc.
     if new_beatmap.beatmap_md5 != old_beatmap.beatmap_md5:
         # delete any instances of the old map
+        logging.info(
+            "Deleting old beatmap",
+            extra={"old_beatmap": old_beatmap.model_dump()},
+        )
         await state.database.execute(
             "DELETE FROM beatmaps WHERE beatmap_md5 = :old_md5",
             {"old_md5": old_beatmap.beatmap_md5},
