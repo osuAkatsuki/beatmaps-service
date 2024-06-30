@@ -1,6 +1,7 @@
 import logging
 import time
 
+from app.adapters import aws_s3
 from app.adapters import discord_webhooks
 from app.adapters import osu_api_v1
 from app.common_models import RankedStatus
@@ -133,6 +134,9 @@ async def _update_from_osu_api(old_beatmap: AkatsukiBeatmap) -> AkatsukiBeatmap 
     new_beatmap.latest_update = int(time.time())
 
     new_beatmap = await akatsuki_beatmaps.create_or_replace(new_beatmap)
+
+    # invalidate any cached .osu data in s3
+    await aws_s3.delete_object(f"/beatmaps/{new_beatmap.beatmap_id}.osu")
 
     return new_beatmap
 

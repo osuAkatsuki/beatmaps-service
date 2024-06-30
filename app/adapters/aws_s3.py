@@ -46,3 +46,18 @@ async def save_object_data(
             extra={"object_key": key},
         )
         return None
+
+
+async def delete_object(key: str) -> None:
+    try:
+        await state.s3_client.delete_object(
+            Bucket=settings.AWS_S3_BUCKET_NAME,
+            Key=key,
+        )
+    except Exception:
+        logging.warning(
+            "Failed to delete object from S3",
+            exc_info=True,
+            extra={"object_key": key},
+        )
+        return None
