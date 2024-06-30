@@ -103,14 +103,10 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
             "Failed to fetch beatmapset osz from mirror",
             exc_info=True,
             extra={
-                "response": (
-                    {
-                        "url": mirror_response.request_url,
-                        "status_code": mirror_response.status_code,
-                    }
-                    if mirror_response is not None
-                    else None
-                ),
+                "response": {
+                    "url": mirror_response.request_url,
+                    "status_code": mirror_response.status_code,
+                },
                 "mirror_name": mirror.name,
                 "mirror_weight": mirror.weight,
                 "beatmapset_id": beatmapset_id,
@@ -188,14 +184,10 @@ async def fetch_beatmap_background_image(beatmap_id: int) -> bytes | None:
             "Failed to fetch beatmap background image from mirror",
             exc_info=True,
             extra={
-                "response": (
-                    {
-                        "url": mirror_response.request_url,
-                        "status_code": mirror_response.status_code,
-                    }
-                    if mirror_response is not None
-                    else None
-                ),
+                "response": {
+                    "url": mirror_response.request_url,
+                    "status_code": mirror_response.status_code,
+                },
                 "mirror_name": mirror.name,
                 "mirror_weight": mirror.weight,
                 "beatmap_id": beatmap_id,
