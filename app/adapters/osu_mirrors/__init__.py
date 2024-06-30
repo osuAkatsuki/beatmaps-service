@@ -259,7 +259,7 @@ async def fetch_beatmap_background_image(beatmap_id: int) -> bytes | None:
     ms_elapsed = (ended_at.timestamp() - started_at.timestamp()) * 1000
 
     logging.info(
-        "Served beatmapset osz2 from mirror",
+        "Served beatmap background image from mirror",
         extra={
             "mirror_name": mirror.name,
             "mirror_weight": mirror.weight,
