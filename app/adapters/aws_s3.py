@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 from app import settings
 from app import state
@@ -21,12 +22,22 @@ async def get_object_data(key: str) -> bytes | None:
     return await s3_object["Body"].read()
 
 
-async def save_object_data(key: str, data: bytes) -> None:
+async def save_object_data(
+    key: str,
+    data: bytes,
+    *,
+    max_age: int | None = None,
+) -> None:
     try:
+        params: dict[str, Any] = {}
+        if max_age is not None:
+            params["CacheControl"] = f"max-age={max_age}"
+
         await state.s3_client.put_object(
             Bucket=settings.AWS_S3_BUCKET_NAME,
             Key=key,
             Body=data,
+            **params,
         )
     except Exception:
         logging.warning(
