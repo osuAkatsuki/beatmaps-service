@@ -57,7 +57,7 @@ class Beatmap(BaseModel):
     audio_unavailable: int
 
 
-async def get_beatmap(
+async def fetch_one_beatmap(
     *,
     beatmap_id: int | None = None,
     beatmap_md5: str | None = None,
