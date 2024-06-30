@@ -65,7 +65,7 @@ class Beatmap(BaseModel):
     artist: str
     beatmap_id: int
     beatmapset_id: int
-    bpm: int
+    bpm: float | None
     creator: str
     creator_id: int
     difficultyrating: float
@@ -92,15 +92,15 @@ class Beatmap(BaseModel):
     count_normal: int
     count_slider: int
     count_spinner: int
-    max_combo: int
+    max_combo: int | None
     storyboard: int
     video: int
     download_unavailable: int
     audio_unavailable: int
 
 
-async def get_beatmap(beatmap_id: int) -> Beatmap | None:
-    osu_api_response_data: dict[str, Any] | None = None
+async def get_beatmap(beatmap_id: int) -> list[Beatmap] | None:
+    osu_api_response_data: list[dict[str, Any]] | None = None
     try:
         response = await osu_api_v1_http_client.get(
             "get_beatmaps",
@@ -114,7 +114,7 @@ async def get_beatmap(beatmap_id: int) -> Beatmap | None:
         response.raise_for_status()
         osu_api_response_data = response.json()
         assert osu_api_response_data is not None
-        return Beatmap(**osu_api_response_data)
+        return [Beatmap(**rec) for rec in osu_api_response_data]
     except Exception:
         logging.exception(
             "Failed to fetch beatmap from osu! API v1",
