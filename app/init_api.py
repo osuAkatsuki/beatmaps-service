@@ -8,6 +8,7 @@ from fastapi import Request
 from fastapi import Response
 from starlette.middleware.base import RequestResponseEndpoint
 
+from app import logger
 from app import settings
 from app import state
 from app.adapters import mysql
@@ -16,6 +17,7 @@ from app.api import api_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    logger.configure_logging()
     await state.database.connect()
     yield
     await state.database.disconnect()

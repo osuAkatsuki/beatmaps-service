@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 import uvicorn
 
-from app import logger
 from app import settings
 
 
 def main() -> int:
-    logger.configure_logging()
-
     uvicorn.run(
         "app.init_api:asgi_app",
         reload=settings.CODE_HOTRELOAD,
