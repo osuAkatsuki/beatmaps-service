@@ -81,6 +81,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
                 mirror_response.data,
             ):
                 mirror_response.is_success = False
+                mirror_response.error_message = "Invalid .osz file"
 
         await beatmap_mirror_requests.create(
             request_url=mirror_response.request_url or "unavailable",
