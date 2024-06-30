@@ -18,6 +18,8 @@ CODE_HOTRELOAD = read_bool(os.environ["CODE_HOTRELOAD"])
 OSU_API_V2_CLIENT_ID = os.environ["OSU_API_V2_CLIENT_ID"]
 OSU_API_V2_CLIENT_SECRET = os.environ["OSU_API_V2_CLIENT_SECRET"]
 
+OSU_API_V1_API_KEY = os.environ["OSU_API_V1_API_KEY"]
+
 DB_USER = os.environ["DB_USER"]
 DB_PASS = os.environ["DB_PASS"]
 DB_HOST = os.environ["DB_HOST"]

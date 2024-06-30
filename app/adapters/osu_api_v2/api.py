@@ -46,7 +46,7 @@ async def get_beatmap(beatmap_id: int) -> BeatmapExtended | None:
         return BeatmapExtended(**osu_api_response_data)
     except Exception:
         logging.exception(
-            "Failed to fetch beatmap from osu! API",
+            "Failed to fetch beatmap from osu! API v2",
             extra={"osu_api_response_data": osu_api_response_data},
         )
         raise
@@ -64,7 +64,7 @@ async def get_beatmapset(beatmapset_id: int) -> BeatmapsetExtended | None:
         return BeatmapsetExtended(**osu_api_response_data)
     except Exception:
         logging.exception(
-            "Failed to fetch beatmapset from osu! API",
+            "Failed to fetch beatmapset from osu! API v2",
             extra={"osu_api_response_data": osu_api_response_data},
         )
         raise
@@ -112,7 +112,7 @@ async def search_beatmapsets(
         return BeatmapsetSearchResponse(**osu_api_response_data)
     except Exception:
         logging.exception(
-            "Failed to fetch beatmapsets from osu! API",
+            "Failed to fetch beatmapsets from osu! API v2",
             extra={"osu_api_response_data": osu_api_response_data},
         )
         raise

@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 
 from app import state
+from app.common_models import GameMode
+from app.common_models import RankedStatus
 
 
 class AkatsukiBeatmap(BaseModel):
@@ -11,18 +13,18 @@ class AkatsukiBeatmap(BaseModel):
     file_name: str
     ar: float
     od: float
-    mode: int  # TODO: enum
+    mode: GameMode
     max_combo: int
     hit_length: int
     bpm: int
-    ranked: int  # TODO: enum
+    ranked: RankedStatus
     latest_update: int
     ranked_status_freezed: bool
     playcount: int
     passcount: int
     rankedby: int | None
     rating: float
-    bancho_ranked_status: int | None  # TODO: enum
+    bancho_ranked_status: RankedStatus | None
     count_circles: int | None
     count_spinners: int | None
     count_sliders: int | None
@@ -92,18 +94,22 @@ async def create(beatmap: AkatsukiBeatmap) -> AkatsukiBeatmap:
             "file_name": beatmap.file_name,
             "ar": beatmap.ar,
             "od": beatmap.od,
-            "mode": beatmap.mode,
+            "mode": beatmap.mode.value,
             "max_combo": beatmap.max_combo,
             "hit_length": beatmap.hit_length,
             "bpm": beatmap.bpm,
-            "ranked": beatmap.ranked,
+            "ranked": beatmap.ranked.value,
             "latest_update": beatmap.latest_update,
             "ranked_status_freezed": beatmap.ranked_status_freezed,
             "playcount": beatmap.playcount,
             "passcount": beatmap.passcount,
             "rankedby": beatmap.rankedby,
             "rating": beatmap.rating,
-            "bancho_ranked_status": beatmap.bancho_ranked_status,
+            "bancho_ranked_status": (
+                beatmap.bancho_ranked_status.value
+                if beatmap.bancho_ranked_status is not None
+                else None
+            ),
             "count_circles": beatmap.count_circles,
             "count_spinners": beatmap.count_spinners,
             "count_sliders": beatmap.count_sliders,
