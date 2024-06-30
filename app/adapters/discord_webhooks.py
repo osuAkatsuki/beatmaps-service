@@ -212,7 +212,7 @@ def beatmap_status_change(
         embed.description = f"Non-frozen {old_beatmap.embed} has just been changed from {old_beatmap.ranked.name} to {new_beatmap.ranked.name}!"
     else:
         embed.description = f"{new_beatmap.embed} has just been frozen in transit from {old_beatmap.ranked.name} to {new_beatmap.ranked.name}!"
-    embed.set_author(name="LESS Score Server", icon_url=EDIT_ICON)
+    embed.set_author(name="beatmaps-service", icon_url=EDIT_ICON)
     embed.set_footer(text="This is an automated action performed by the server.")
 
     schedule_hook(
