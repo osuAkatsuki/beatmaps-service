@@ -119,3 +119,6 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
         },
     )
     return beatmap_zip_data
+
+
+async def fetch_beatmap_background_image(beatmap_id: int) -> bytes | None: ...
