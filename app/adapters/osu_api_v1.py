@@ -10,7 +10,7 @@ from app import settings
 from app.common_models import GameMode
 
 osu_api_v1_http_client = httpx.AsyncClient(
-    base_url="https://old.ppy.sh/api/",
+    base_url="https://old.ppy.sh/",
     timeout=httpx.Timeout(15),
 )
 
@@ -68,7 +68,7 @@ async def fetch_one_beatmap(
     try:
         osu_api_v1_key = random.choice(settings.OSU_API_V1_API_KEYS_POOL)
         response = await osu_api_v1_http_client.get(
-            "get_beatmaps",
+            "api/get_beatmaps",
             params={
                 "k": osu_api_v1_key,
                 **({"b": beatmap_id} if beatmap_id else {"h": beatmap_md5}),
@@ -97,6 +97,25 @@ async def fetch_one_beatmap(
             extra={
                 "beatmap_id": beatmap_id,
                 "osu_api_response_data": osu_api_response_data,
+            },
+        )
+        raise
+
+
+async def fetch_beatmap_osu_file_data(beatmap_id: int) -> bytes | None:
+    try:
+        response = await osu_api_v1_http_client.get(f"osu/{beatmap_id}")
+        if response.status_code == 404:
+            return None
+        if response.status_code == 403:
+            raise ValueError("osu api is down") from None
+        response.raise_for_status()
+        return response.read()
+    except Exception:
+        logging.exception(
+            "Failed to fetch beatmap osu file from osu! API v1",
+            extra={
+                "beatmap_id": beatmap_id,
             },
         )
         raise
