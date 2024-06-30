@@ -1,4 +1,5 @@
 import logging
+import random
 from datetime import datetime
 from typing import Any
 
@@ -105,7 +106,7 @@ async def get_beatmap_by_id(beatmap_id: int) -> Beatmap | None:
         response = await osu_api_v1_http_client.get(
             "get_beatmaps",
             params={
-                "k": settings.OSU_API_V1_API_KEY,
+                "k": random.choice(settings.OSU_API_V1_API_KEYS_POOL),
                 "b": beatmap_id,
             },
         )
