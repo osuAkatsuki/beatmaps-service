@@ -20,7 +20,6 @@ class NerinyanMirror(AbstractBeatmapMirror):
     ) -> BeatmapMirrorResponse[bytes | None]:
         response: httpx.Response | None = None
         try:
-            logging.info(f"Fetching beatmapset osz from nerinyan: {beatmapset_id}")
             response = await self.http_client.get(
                 f"{self.base_url}/d/{beatmapset_id}",
             )
@@ -39,10 +38,6 @@ class NerinyanMirror(AbstractBeatmapMirror):
                 status_code=response.status_code,
             )
         except Exception as exc:
-            logging.warning(
-                "Failed to fetch beatmap from nerinyan.moe",
-                exc_info=True,
-            )
             return BeatmapMirrorResponse(
                 data=None,
                 is_success=False,

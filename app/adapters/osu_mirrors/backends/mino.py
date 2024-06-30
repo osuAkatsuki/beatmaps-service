@@ -20,7 +20,6 @@ class MinoMirror(AbstractBeatmapMirror):
     ) -> BeatmapMirrorResponse[bytes | None]:
         response: httpx.Response | None = None
         try:
-            logging.info(f"Fetching beatmapset osz from mino: {beatmapset_id}")
             response = await self.http_client.get(
                 f"{self.base_url}/d/{beatmapset_id}",
                 timeout=httpx.Timeout(None, connect=2),
@@ -40,10 +39,6 @@ class MinoMirror(AbstractBeatmapMirror):
                 status_code=response.status_code,
             )
         except Exception as exc:
-            logging.warning(
-                "Failed to fetch beatmap from catboy.best",
-                exc_info=True,
-            )
             return BeatmapMirrorResponse(
                 data=None,
                 is_success=False,

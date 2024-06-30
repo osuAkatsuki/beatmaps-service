@@ -20,7 +20,6 @@ class OsuDirectMirror(AbstractBeatmapMirror):
     ) -> BeatmapMirrorResponse[bytes | None]:
         response: httpx.Response | None = None
         try:
-            logging.info(f"Fetching beatmapset osz from osu!direct: {beatmapset_id}")
             response = await self.http_client.get(
                 f"{self.base_url}/api/d/{beatmapset_id}",
                 timeout=httpx.Timeout(None, connect=2),
@@ -40,10 +39,6 @@ class OsuDirectMirror(AbstractBeatmapMirror):
                 status_code=response.status_code,
             )
         except Exception as exc:
-            logging.warning(
-                "Failed to fetch beatmap from osu!direct",
-                exc_info=True,
-            )
             return BeatmapMirrorResponse(
                 data=None,
                 is_success=False,
@@ -59,7 +54,6 @@ class OsuDirectMirror(AbstractBeatmapMirror):
     ) -> BeatmapMirrorResponse[bytes | None]:
         response: httpx.Response | None = None
         try:
-            logging.info(f"Fetching beatmap background from mino: {beatmap_id}")
             response = await self.http_client.get(
                 f"{self.base_url}/api/media/background/{beatmap_id}",
                 timeout=httpx.Timeout(None, connect=2),
@@ -79,10 +73,6 @@ class OsuDirectMirror(AbstractBeatmapMirror):
                 status_code=response.status_code,
             )
         except Exception as exc:
-            logging.warning(
-                "Failed to fetch beatmap background from catboy.best",
-                exc_info=True,
-            )
             return BeatmapMirrorResponse(
                 data=None,
                 is_success=False,
