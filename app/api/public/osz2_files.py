@@ -3,11 +3,11 @@ from fastapi import Response
 
 from app.adapters import osu_mirrors
 
-router = APIRouter(tags=["osz2 Files"])
+router = APIRouter(tags=["osz Files"])
 
 
 @router.get("/public/api/d/{beatmapset_id}")
-async def download_beatmapset_osz2(beatmapset_id: int) -> Response:
+async def download_beatmapset_osz(beatmapset_id: int) -> Response:
     beatmap_zip_data = await osu_mirrors.fetch_beatmap_zip_data(beatmapset_id)
     if beatmap_zip_data is not None:
         return Response(

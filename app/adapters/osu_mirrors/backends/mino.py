@@ -12,7 +12,7 @@ from app.repositories.beatmap_mirror_requests import MirrorResource
 class MinoMirror(AbstractBeatmapMirror):
     name = "mino"
     base_url = "https://central.catboy.best"
-    supported_resources = {MirrorResource.OSZ2_FILE, MirrorResource.BACKGROUND_IMAGE}
+    supported_resources = {MirrorResource.OSZ_FILE, MirrorResource.BACKGROUND_IMAGE}
 
     @override
     async def fetch_beatmap_zip_data(
@@ -20,7 +20,7 @@ class MinoMirror(AbstractBeatmapMirror):
         beatmapset_id: int,
     ) -> BeatmapMirrorResponse[bytes | None]:
         try:
-            logging.info(f"Fetching beatmapset osz2 from mino: {beatmapset_id}")
+            logging.info(f"Fetching beatmapset osz from mino: {beatmapset_id}")
             response = await self.http_client.get(
                 f"{self.base_url}/d/{beatmapset_id}",
                 timeout=httpx.Timeout(None, connect=2),

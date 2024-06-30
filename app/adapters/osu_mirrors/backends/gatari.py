@@ -11,7 +11,7 @@ from app.repositories.beatmap_mirror_requests import MirrorResource
 class GatariMirror(AbstractBeatmapMirror):
     name = "gatari"
     base_url = "https://osu.gatari.pw"
-    supported_resources = {MirrorResource.OSZ2_FILE}
+    supported_resources = {MirrorResource.OSZ_FILE}
 
     @override
     async def fetch_beatmap_zip_data(
@@ -19,7 +19,7 @@ class GatariMirror(AbstractBeatmapMirror):
         beatmapset_id: int,
     ) -> BeatmapMirrorResponse[bytes | None]:
         try:
-            logging.info(f"Fetching beatmapset osz2 from gatari: {beatmapset_id}")
+            logging.info(f"Fetching beatmapset osz from gatari: {beatmapset_id}")
             response = await self.http_client.get(
                 f"{self.base_url}/d/{beatmapset_id}",
                 follow_redirects=True,
