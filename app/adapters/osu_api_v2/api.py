@@ -46,8 +46,11 @@ async def get_beatmap(beatmap_id: int) -> BeatmapExtended | None:
         return BeatmapExtended(**osu_api_response_data)
     except Exception:
         logging.exception(
-            "Failed to fetch beatmap from osu! API",
-            extra={"osu_api_response_data": osu_api_response_data},
+            "Failed to fetch beatmap from osu! API v2",
+            extra={
+                "beatmap_id": beatmap_id,
+                "osu_api_response_data": osu_api_response_data,
+            },
         )
         raise
 
@@ -64,8 +67,11 @@ async def get_beatmapset(beatmapset_id: int) -> BeatmapsetExtended | None:
         return BeatmapsetExtended(**osu_api_response_data)
     except Exception:
         logging.exception(
-            "Failed to fetch beatmapset from osu! API",
-            extra={"osu_api_response_data": osu_api_response_data},
+            "Failed to fetch beatmapset from osu! API v2",
+            extra={
+                "beatmapset_id": beatmapset_id,
+                "osu_api_response_data": osu_api_response_data,
+            },
         )
         raise
 
@@ -112,7 +118,24 @@ async def search_beatmapsets(
         return BeatmapsetSearchResponse(**osu_api_response_data)
     except Exception:
         logging.exception(
-            "Failed to fetch beatmapsets from osu! API",
-            extra={"osu_api_response_data": osu_api_response_data},
+            "Failed to fetch beatmapsets from osu! API v2",
+            extra={
+                "query": query,
+                "general_settings": (
+                    {s.name for s in general_settings}
+                    if general_settings is not None
+                    else None
+                ),
+                "extras": {s.name for s in extras} if extras is not None else None,
+                "mode": mode.name if mode is not None else None,
+                "category": category.name if category is not None else None,
+                "filter_nsfw": filter_nsfw,
+                "language_id": language_id.value if language_id is not None else None,
+                "genre_id": genre_id.value if genre_id is not None else None,
+                "sort_by": sort_by.name if sort_by else None,
+                "page": page,
+                "cursor_string": cursor_string,
+                "osu_api_response_data": osu_api_response_data,
+            },
         )
         raise
