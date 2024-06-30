@@ -254,3 +254,18 @@ async def fetch_beatmap_background_image(beatmap_id: int) -> bytes | None:
         response_error=None,
         resource=MirrorResource.BACKGROUND_IMAGE,
     )
+    await BACKGROUND_IMAGE_MIRROR_SELECTOR.update_all_mirror_and_selector_weights()
+
+    ms_elapsed = (ended_at.timestamp() - started_at.timestamp()) * 1000
+
+    logging.info(
+        "Served beatmapset osz2 from mirror",
+        extra={
+            "mirror_name": mirror.name,
+            "mirror_weight": mirror.weight,
+            "beatmap_id": beatmap_id,
+            "ms_elapsed": ms_elapsed,
+            "data_size": len(mirror_response.data) if mirror_response.data else 0,
+        },
+    )
+    return mirror_response.data

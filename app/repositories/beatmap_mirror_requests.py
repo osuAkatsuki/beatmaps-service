@@ -23,7 +23,7 @@ class BeatmapMirrorRequest(BaseModel):
     success: bool
     started_at: datetime
     ended_at: datetime
-    response_status_code: int
+    response_status_code: int | None
     response_size: int
     response_error: str | None
     resource: MirrorResource
