@@ -1,6 +1,7 @@
 import time
 
 from app import state
+from app.adapters import discord_webhooks
 from app.adapters import osu_api_v1
 from app.common_models import RankedStatus
 from app.repositories import akatsuki_beatmaps
@@ -115,20 +116,19 @@ async def _update_from_osu_api(old_beatmap: AkatsukiBeatmap) -> AkatsukiBeatmap 
             RankedStatus.APPROVED,
             RankedStatus.LOVED,
         }:
-            # app.usecases.discord.beatmap_status_change(
-            #     old_beatmap=old_beatmap,
-            #     new_beatmap=new_beatmap,
-            #     action_taken="frozen",
-            # )
+            discord_webhooks.beatmap_status_change(
+                old_beatmap=old_beatmap,
+                new_beatmap=new_beatmap,
+                action_taken="frozen",
+            )
             new_beatmap.ranked = old_beatmap.ranked
             new_beatmap.ranked_status_freezed = True
         else:
-            ...
-            # app.usecases.discord.beatmap_status_change(
-            #     old_beatmap=old_beatmap,
-            #     new_beatmap=new_beatmap,
-            #     action_taken="status_change",
-            # )
+            discord_webhooks.beatmap_status_change(
+                old_beatmap=old_beatmap,
+                new_beatmap=new_beatmap,
+                action_taken="status_change",
+            )
 
     new_beatmap.latest_update = int(time.time())
 
