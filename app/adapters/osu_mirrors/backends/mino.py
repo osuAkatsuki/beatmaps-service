@@ -5,7 +5,6 @@ from typing_extensions import override
 
 from app.adapters.osu_mirrors.backends import AbstractBeatmapMirror
 from app.adapters.osu_mirrors.backends import BeatmapMirrorResponse
-from app.adapters.osu_mirrors.backends import MirrorRequestError
 from app.repositories.beatmap_mirror_requests import MirrorResource
 
 
@@ -19,6 +18,7 @@ class MinoMirror(AbstractBeatmapMirror):
         self,
         beatmapset_id: int,
     ) -> BeatmapMirrorResponse[bytes | None]:
+        response: httpx.Response | None = None
         try:
             logging.info(f"Fetching beatmapset osz from mino: {beatmapset_id}")
             response = await self.http_client.get(
@@ -42,13 +42,19 @@ class MinoMirror(AbstractBeatmapMirror):
                 "Failed to fetch beatmap from catboy.best",
                 exc_info=True,
             )
-            raise MirrorRequestError() from exc
+            return BeatmapMirrorResponse(
+                data=None,
+                request_url=str(response.request.url) if response else None,
+                status_code=response.status_code if response else None,
+                error_message=str(exc),
+            )
 
     @override
     async def fetch_beatmap_background_image(
         self,
         beatmap_id: int,
     ) -> BeatmapMirrorResponse[bytes | None]:
+        response: httpx.Response | None = None
         try:
             logging.info(f"Fetching beatmap background from mino: {beatmap_id}")
             response = await self.http_client.get(
@@ -72,4 +78,9 @@ class MinoMirror(AbstractBeatmapMirror):
                 "Failed to fetch beatmap background from catboy.best",
                 exc_info=True,
             )
-            raise MirrorRequestError() from exc
+            return BeatmapMirrorResponse(
+                data=None,
+                request_url=str(response.request.url) if response else None,
+                status_code=response.status_code if response else None,
+                error_message=str(exc),
+            )
