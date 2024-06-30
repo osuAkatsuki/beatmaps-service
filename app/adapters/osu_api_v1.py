@@ -60,7 +60,7 @@ osu_api_v1_http_client = httpx.AsyncClient(
 class Beatmap(BaseModel):
     approved: int
     submit_date: datetime
-    approved_date: datetime
+    approved_date: datetime | None
     last_update: datetime
     artist: str
     beatmap_id: int
@@ -69,8 +69,8 @@ class Beatmap(BaseModel):
     creator: str
     creator_id: int
     difficultyrating: float
-    diff_aim: float
-    diff_speed: float
+    diff_aim: float | None
+    diff_speed: float | None
     diff_size: float
     diff_overall: float
     diff_approach: float
