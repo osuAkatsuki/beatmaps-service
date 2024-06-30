@@ -11,7 +11,7 @@ from app import state
 MIRROR_INITIAL_WEIGHT = 100
 
 
-class BeatmapMirrorResource(StrEnum):
+class MirrorResource(StrEnum):
     OSZ2_FILE = "osz2_file"
     BACKGROUND_IMAGE = "background_image"
 
@@ -25,7 +25,7 @@ class BeatmapMirrorRequest(BaseModel):
     ended_at: datetime
     response_size: int
     response_error: str | None
-    resource: BeatmapMirrorResource
+    resource: MirrorResource
 
 
 class BeatmapMirrorScore(BaseModel):
@@ -33,7 +33,7 @@ class BeatmapMirrorScore(BaseModel):
     score: float
 
 
-async def get_mirror_weight(mirror_name: str, resource: BeatmapMirrorResource) -> int:
+async def get_mirror_weight(mirror_name: str, resource: MirrorResource) -> int:
     """Give the mirror a weighting based on its latency and failure rate."""
     p75_success_ms_latency = await state.database.fetch_val(
         """\
@@ -86,7 +86,7 @@ async def create(
     ended_at: datetime,
     response_size: int,
     response_error: str | None,
-    resource: BeatmapMirrorResource,
+    resource: MirrorResource,
 ) -> BeatmapMirrorRequest:
     query = """\
         INSERT INTO beatmap_mirror_requests (

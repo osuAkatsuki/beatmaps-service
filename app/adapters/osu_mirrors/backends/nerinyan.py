@@ -1,13 +1,18 @@
 import logging
 
+from typing_extensions import override
+
 from app.adapters.osu_mirrors.backends import AbstractBeatmapMirror
 from app.adapters.osu_mirrors.backends import MirrorRequestError
+from app.repositories.beatmap_mirror_requests import MirrorResource
 
 
 class NerinyanMirror(AbstractBeatmapMirror):
     name = "nerinyan"
     base_url = "https://api.nerinyan.moe"
+    supported_resources = {MirrorResource.OSZ2_FILE}
 
+    @override
     async def fetch_beatmap_zip_data(self, beatmapset_id: int) -> bytes | None:
         try:
             logging.info(f"Fetching beatmapset osz2 from nerinyan: {beatmapset_id}")
