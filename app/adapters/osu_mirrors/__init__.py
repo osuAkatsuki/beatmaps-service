@@ -25,9 +25,9 @@ OSZ2_FILE_MIRROR_SELECTOR = DynamicWeightedRoundRobinMirrorSelector(
     mirrors=[
         mirror
         for mirror in BEATMAP_MIRRORS
-        if MirrorResource.OSZ2_FILE in mirror.supported_resources
+        if MirrorResource.OSZ_FILE in mirror.supported_resources
     ],
-    resource=MirrorResource.OSZ2_FILE,
+    resource=MirrorResource.OSZ_FILE,
 )
 BACKGROUND_IMAGE_MIRROR_SELECTOR = DynamicWeightedRoundRobinMirrorSelector(
     mirrors=[
@@ -102,7 +102,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
                     else 0
                 ),
                 response_error=str(exc),
-                resource=MirrorResource.OSZ2_FILE,
+                resource=MirrorResource.OSZ_FILE,
             )
             await OSZ2_FILE_MIRROR_SELECTOR.update_all_mirror_and_selector_weights()
             logging.warning(
@@ -139,7 +139,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
         response_status_code=mirror_response.status_code,
         response_size=len(mirror_response.data) if mirror_response.data else 0,
         response_error=None,
-        resource=MirrorResource.OSZ2_FILE,
+        resource=MirrorResource.OSZ_FILE,
     )
     await OSZ2_FILE_MIRROR_SELECTOR.update_all_mirror_and_selector_weights()
 

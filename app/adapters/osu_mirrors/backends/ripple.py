@@ -11,7 +11,7 @@ from app.repositories.beatmap_mirror_requests import MirrorResource
 class RippleMirror(AbstractBeatmapMirror):
     name = "ripple"
     base_url = "https://storage.ripple.moe"
-    supported_resources = {MirrorResource.OSZ2_FILE}
+    supported_resources = {MirrorResource.OSZ_FILE}
 
     @override
     async def fetch_beatmap_zip_data(
