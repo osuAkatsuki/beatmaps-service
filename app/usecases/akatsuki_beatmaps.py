@@ -82,6 +82,7 @@ async def _update_from_osu_api(old_beatmap: AkatsukiBeatmap) -> AkatsukiBeatmap 
             extra={"beatmap": old_beatmap.model_dump()},
         )
         await akatsuki_beatmaps.delete_by_md5(old_beatmap.beatmap_md5)
+        await aws_s3.delete_object(f"/beatmaps/{old_beatmap.beatmap_id}.osu")
         return None
 
     new_beatmap = _parse_akatsuki_beatmap_from_osu_api_v1_response(
