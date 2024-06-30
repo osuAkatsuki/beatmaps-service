@@ -78,6 +78,7 @@ class AsyncOAuth(httpx.Auth):
             )
             response = yield request
 
+        # TODO: refactor this log to work with osu api v1, be more specific etc.
         logging.info(
             "Made oauth-authorized request",
             extra={
