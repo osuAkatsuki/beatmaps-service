@@ -21,7 +21,7 @@ BEATMAP_MIRRORS: list[AbstractBeatmapMirror] = [
     # GatariMirror(),  # Disabled as ratelimit is very low
     # RippleMirror(),  # Disabled as only ranked maps are supported
 ]
-OSZ2_FILE_MIRROR_SELECTOR = DynamicWeightedRoundRobinMirrorSelector(
+OSZ_FILE_MIRROR_SELECTOR = DynamicWeightedRoundRobinMirrorSelector(
     mirrors=[
         mirror
         for mirror in BEATMAP_MIRRORS
@@ -52,10 +52,10 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
     prev_mirror: AbstractBeatmapMirror | None = None
     num_attempts = 0
 
-    await OSZ2_FILE_MIRROR_SELECTOR.update_all_mirror_and_selector_weights()
+    await OSZ_FILE_MIRROR_SELECTOR.update_all_mirror_and_selector_weights()
 
     while True:
-        mirror = OSZ2_FILE_MIRROR_SELECTOR.select_mirror()
+        mirror = OSZ_FILE_MIRROR_SELECTOR.select_mirror()
         if mirror is prev_mirror:
             # don't allow the same mirror to be run twice, to help
             # prevent loops which cause the mirror to lose all weighting
@@ -63,7 +63,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
             continue
 
         # Only retry up to 2x the number of mirrors
-        if num_attempts > OSZ2_FILE_MIRROR_SELECTOR.get_num_mirrors() * 2:
+        if num_attempts > OSZ_FILE_MIRROR_SELECTOR.get_num_mirrors() * 2:
             logging.warning(
                 "Failed to fetch beatmapset osz from any mirror",
                 extra={"beatmapset_id": beatmapset_id},
@@ -104,7 +104,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
                 response_error=str(exc),
                 resource=MirrorResource.OSZ_FILE,
             )
-            await OSZ2_FILE_MIRROR_SELECTOR.update_all_mirror_and_selector_weights()
+            await OSZ_FILE_MIRROR_SELECTOR.update_all_mirror_and_selector_weights()
             logging.warning(
                 "Failed to fetch beatmapset osz from mirror",
                 exc_info=True,
@@ -141,7 +141,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
         response_error=None,
         resource=MirrorResource.OSZ_FILE,
     )
-    await OSZ2_FILE_MIRROR_SELECTOR.update_all_mirror_and_selector_weights()
+    await OSZ_FILE_MIRROR_SELECTOR.update_all_mirror_and_selector_weights()
 
     ms_elapsed = (ended_at.timestamp() - started_at.timestamp()) * 1000
 
