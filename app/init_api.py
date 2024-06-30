@@ -2,6 +2,7 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+import aiobotocore.session
 from databases import Database
 from fastapi import FastAPI
 from fastapi import Request
@@ -19,7 +20,19 @@ from app.api import api_router
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.configure_logging()
     await state.database.connect()
+
+    aws_session = aiobotocore.session.get_session()
+    s3_client = aws_session.create_client(
+        service_name="s3",
+        region_name=settings.AWS_S3_REGION_NAME,
+        endpoint_url=settings.AWS_S3_ENDPOINT_URL,
+        aws_access_key_id=settings.AWS_S3_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_S3_SECRET_ACCESS_KEY,
+    )
+    state.s3_client = await s3_client.__aenter__()
+
     yield
+    await state.s3_client.__aexit__(None, None, None)
     await state.database.disconnect()
 
 
