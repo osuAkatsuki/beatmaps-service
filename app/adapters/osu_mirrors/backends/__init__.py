@@ -12,15 +12,13 @@ from app.repositories.beatmap_mirror_requests import MirrorResource
 T = TypeVar("T", covariant=True)
 
 
-class MirrorRequestError(Exception):
-    pass
-
-
 @dataclass
 class BeatmapMirrorResponse(Generic[T]):
     data: T
-    request_url: str
-    status_code: int
+    is_success: bool
+    request_url: str | None
+    status_code: int | None
+    error_message: str | None = None
 
 
 class AbstractBeatmapMirror(ABC):

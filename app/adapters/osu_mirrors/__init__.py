@@ -71,77 +71,50 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
             return None
 
         num_attempts += 1
-        started_at = datetime.now()
 
-        mirror_response: BeatmapMirrorResponse[bytes | None] | None = None
-        try:
-            mirror_response = await mirror.fetch_beatmap_zip_data(beatmapset_id)
+        started_at = datetime.now()
+        mirror_response = await mirror.fetch_beatmap_zip_data(beatmapset_id)
+        ended_at = datetime.now()
+
+        if mirror_response.is_success:
             if mirror_response.data is not None and not is_valid_zip_file(
                 mirror_response.data,
             ):
-                raise ValueError("Received bad osz data from mirror")
-        except Exception as exc:
-            ended_at = datetime.now()
-            await beatmap_mirror_requests.create(
-                request_url=(
-                    mirror_response.request_url if mirror_response else "unavailable"
-                ),
-                api_key_id=None,
-                mirror_name=mirror.name,
-                success=False,
-                started_at=started_at,
-                ended_at=ended_at,
-                response_status_code=(
-                    mirror_response.status_code
-                    if mirror_response and mirror_response.status_code
-                    else None
-                ),
-                response_size=(
-                    len(mirror_response.data)
-                    if mirror_response and mirror_response.data
-                    else 0
-                ),
-                response_error=str(exc),
-                resource=MirrorResource.OSZ_FILE,
-            )
-            await OSZ_FILE_MIRROR_SELECTOR.update_all_mirror_and_selector_weights()
-            logging.warning(
-                "Failed to fetch beatmapset osz from mirror",
-                exc_info=True,
-                extra={
-                    "response": (
-                        {
-                            "url": mirror_response.request_url,
-                            "status_code": mirror_response.status_code,
-                        }
-                        if mirror_response is not None
-                        else None
-                    ),
-                    "mirror_name": mirror.name,
-                    "mirror_weight": mirror.weight,
-                    "beatmapset_id": beatmapset_id,
-                },
-            )
-            prev_mirror = mirror
-            continue
-        else:
+                mirror_response.is_success = False
+                mirror_response.error_message = "Invalid .osz file"
+
+        await beatmap_mirror_requests.create(
+            request_url=mirror_response.request_url or "unavailable",
+            api_key_id=None,
+            mirror_name=mirror.name,
+            success=mirror_response.is_success,
+            started_at=started_at,
+            ended_at=ended_at,
+            response_status_code=mirror_response.status_code,
+            response_size=len(mirror_response.data) if mirror_response.data else 0,
+            response_error=mirror_response.error_message,
+            resource=MirrorResource.OSZ_FILE,
+        )
+        await OSZ_FILE_MIRROR_SELECTOR.update_all_mirror_and_selector_weights()
+
+        if mirror_response.is_success:
             break
 
-    ended_at = datetime.now()
-
-    await beatmap_mirror_requests.create(
-        request_url=f"{mirror.base_url}/d/{beatmapset_id}",
-        api_key_id=None,
-        mirror_name=mirror.name,
-        success=True,
-        started_at=started_at,
-        ended_at=ended_at,
-        response_status_code=mirror_response.status_code,
-        response_size=len(mirror_response.data) if mirror_response.data else 0,
-        response_error=None,
-        resource=MirrorResource.OSZ_FILE,
-    )
-    await OSZ_FILE_MIRROR_SELECTOR.update_all_mirror_and_selector_weights()
+        logging.warning(
+            "Failed to fetch beatmapset osz from mirror",
+            exc_info=True,
+            extra={
+                "response": {
+                    "url": mirror_response.request_url,
+                    "status_code": mirror_response.status_code,
+                },
+                "mirror_name": mirror.name,
+                "mirror_weight": mirror.weight,
+                "beatmapset_id": beatmapset_id,
+            },
+        )
+        prev_mirror = mirror
+        continue
 
     ms_elapsed = (ended_at.timestamp() - started_at.timestamp()) * 1000
 
@@ -186,75 +159,43 @@ async def fetch_beatmap_background_image(beatmap_id: int) -> bytes | None:
             return None
 
         num_attempts += 1
-        started_at = datetime.now()
 
-        mirror_response: BeatmapMirrorResponse[bytes | None] | None = None
-        try:
-            mirror_response = await mirror.fetch_beatmap_background_image(
-                beatmap_id,
-            )
-        except Exception as exc:
-            ended_at = datetime.now()
-            await beatmap_mirror_requests.create(
-                request_url=(
-                    mirror_response.request_url if mirror_response else "unavailable"
-                ),
-                api_key_id=None,
-                mirror_name=mirror.name,
-                success=False,
-                started_at=started_at,
-                ended_at=ended_at,
-                response_status_code=(
-                    mirror_response.status_code
-                    if mirror_response and mirror_response.status_code
-                    else None
-                ),
-                response_size=(
-                    len(mirror_response.data)
-                    if mirror_response and mirror_response.data
-                    else 0
-                ),
-                response_error=str(exc),
-                resource=MirrorResource.BACKGROUND_IMAGE,
-            )
-            await BACKGROUND_IMAGE_MIRROR_SELECTOR.update_all_mirror_and_selector_weights()
-            logging.warning(
-                "Failed to fetch beatmap background image from mirror",
-                exc_info=True,
-                extra={
-                    "response": (
-                        {
-                            "url": mirror_response.request_url,
-                            "status_code": mirror_response.status_code,
-                        }
-                        if mirror_response is not None
-                        else None
-                    ),
-                    "mirror_name": mirror.name,
-                    "mirror_weight": mirror.weight,
-                    "beatmap_id": beatmap_id,
-                },
-            )
-            prev_mirror = mirror
-            continue
-        else:
+        started_at = datetime.now()
+        mirror_response = await mirror.fetch_beatmap_background_image(beatmap_id)
+        ended_at = datetime.now()
+
+        await beatmap_mirror_requests.create(
+            request_url=mirror_response.request_url or "unavailable",
+            api_key_id=None,
+            mirror_name=mirror.name,
+            success=mirror_response.is_success,
+            started_at=started_at,
+            ended_at=ended_at,
+            response_status_code=mirror_response.status_code,
+            response_size=len(mirror_response.data) if mirror_response.data else 0,
+            response_error=mirror_response.error_message,
+            resource=MirrorResource.BACKGROUND_IMAGE,
+        )
+        await BACKGROUND_IMAGE_MIRROR_SELECTOR.update_all_mirror_and_selector_weights()
+
+        if mirror_response.is_success:
             break
 
-    ended_at = datetime.now()
-
-    await beatmap_mirror_requests.create(
-        request_url=mirror_response.request_url,
-        api_key_id=None,
-        mirror_name=mirror.name,
-        success=True,
-        started_at=started_at,
-        ended_at=ended_at,
-        response_status_code=mirror_response.status_code,
-        response_size=len(mirror_response.data) if mirror_response.data else 0,
-        response_error=None,
-        resource=MirrorResource.BACKGROUND_IMAGE,
-    )
-    await BACKGROUND_IMAGE_MIRROR_SELECTOR.update_all_mirror_and_selector_weights()
+        logging.warning(
+            "Failed to fetch beatmap background image from mirror",
+            exc_info=True,
+            extra={
+                "response": {
+                    "url": mirror_response.request_url,
+                    "status_code": mirror_response.status_code,
+                },
+                "mirror_name": mirror.name,
+                "mirror_weight": mirror.weight,
+                "beatmap_id": beatmap_id,
+            },
+        )
+        prev_mirror = mirror
+        continue
 
     ms_elapsed = (ended_at.timestamp() - started_at.timestamp()) * 1000
 
