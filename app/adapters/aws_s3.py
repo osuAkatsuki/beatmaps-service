@@ -14,8 +14,8 @@ async def get_object_data(key: str) -> bytes | None:
     except state.s3_client.exceptions.NoSuchKey:
         return None
     except Exception:
-        logging.warning(
-            "Failed to get object data from S3",
+        logging.exception(
+            "Unexpected error when fetching object data from S3",
             exc_info=True,
             extra={"object_key": key},
         )
@@ -42,10 +42,10 @@ async def save_object_data(
             **params,
         )
     except Exception:
-        logging.warning(
-            "Failed to save object data to S3",
+        logging.exception(
+            "Unexpected error when saving object data from S3",
             exc_info=True,
-            extra={"object_key": key},
+            extra={"object_key": key, "data_size": len(data)},
         )
         return None
 
