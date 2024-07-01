@@ -11,6 +11,8 @@ async def get_object_data(key: str) -> bytes | None:
             Bucket=settings.AWS_S3_BUCKET_NAME,
             Key=key,
         )
+    except state.s3_client.exceptions.NoSuchKey:
+        return None
     except Exception:
         logging.warning(
             "Failed to get object data from S3",
