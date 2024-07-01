@@ -11,7 +11,7 @@ from app.repositories.beatmap_mirror_requests import MirrorResource
 
 class MinoMirror(AbstractBeatmapMirror):
     name = "mino"
-    base_url = "https://central.catboy.best"
+    base_url = "https://catboy.best"
     supported_resources = {MirrorResource.OSZ_FILE, MirrorResource.BACKGROUND_IMAGE}
 
     @override
@@ -87,3 +87,13 @@ class MinoMirror(AbstractBeatmapMirror):
                 status_code=response.status_code if response else None,
                 error_message=str(exc),
             )
+
+
+class MinoCentralMirror(MinoMirror):
+    name = "mino-central"
+    base_url = "https://central.catboy.best"
+
+
+class MinoUSMirror(MinoMirror):
+    name = "mino-us"
+    base_url = "https://us.catboy.best"
