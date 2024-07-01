@@ -3,7 +3,7 @@ from fastapi import Response
 
 from app.adapters import osu_mirrors
 
-router = APIRouter(tags=["osz Files"])
+router = APIRouter(tags=["(Public) osz Files"])
 
 
 @router.get("/public/api/d/{beatmapset_id}")
