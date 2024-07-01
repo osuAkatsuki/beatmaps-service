@@ -90,8 +90,18 @@ class MinoMirror(AbstractBeatmapMirror):
 
 
 class MinoCentralMirror(MinoMirror):
-    name = "mino-central"
+    name = "mino-germany"
     base_url = "https://central.catboy.best"
+
+
+class MinoUSCentralMirror(MinoMirror):
+    name = "mino-us-central"
+    base_url = "https://usc.catboy.best"
+
+
+class MinoUSEastMirror(MinoMirror):
+    name = "mino-us-east"
+    base_url = "https://use.catboy.best"
 
 
 class MinoUSWestMirror(MinoMirror):
@@ -99,6 +109,11 @@ class MinoUSWestMirror(MinoMirror):
     base_url = "https://us.catboy.best"
 
 
-class MinoUSEastMirror(MinoMirror):
-    name = "mino-us-east"
-    base_url = "https://use.catboy.best"
+class MinoSingaporeMirror(MinoMirror):
+    name = "mino-singapore"
+    base_url = "https://sg.catboy.best"
+
+
+class MinoBrazilMirror(MinoMirror):
+    name = "mino-brazil"
+    base_url = "https://br.catboy.best"

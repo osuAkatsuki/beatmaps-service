@@ -2,7 +2,10 @@ import logging
 from datetime import datetime
 
 from app.adapters.osu_mirrors.backends import AbstractBeatmapMirror
+from app.adapters.osu_mirrors.backends.mino import MinoBrazilMirror
 from app.adapters.osu_mirrors.backends.mino import MinoCentralMirror
+from app.adapters.osu_mirrors.backends.mino import MinoSingaporeMirror
+from app.adapters.osu_mirrors.backends.mino import MinoUSCentralMirror
 from app.adapters.osu_mirrors.backends.mino import MinoUSEastMirror
 from app.adapters.osu_mirrors.backends.mino import MinoUSWestMirror
 from app.adapters.osu_mirrors.backends.nerinyan import NerinyanMirror
@@ -19,6 +22,9 @@ BEATMAP_MIRRORS: list[AbstractBeatmapMirror] = [
     MinoCentralMirror(),
     MinoUSEastMirror(),
     MinoUSWestMirror(),
+    MinoBrazilMirror(),
+    MinoUSCentralMirror(),
+    MinoSingaporeMirror(),
     NerinyanMirror(),
     OsuDirectMirror(),
     # GatariMirror(),  # Disabled as ratelimit is very low
