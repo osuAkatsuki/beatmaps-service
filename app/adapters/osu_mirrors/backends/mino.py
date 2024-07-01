@@ -3,6 +3,7 @@ import logging
 import httpx
 from typing_extensions import override
 
+from app import settings
 from app.adapters.osu_mirrors.backends import AbstractBeatmapMirror
 from app.adapters.osu_mirrors.backends import BeatmapMirrorResponse
 from app.repositories.beatmap_mirror_requests import MirrorResource
@@ -22,6 +23,7 @@ class MinoMirror(AbstractBeatmapMirror):
         try:
             response = await self.http_client.get(
                 f"{self.base_url}/d/{beatmapset_id}",
+                headers={"x-ratelimit-key": settings.MINO_INCREASED_RATELIMIT_KEY},
                 timeout=httpx.Timeout(None, connect=2),
             )
             if response.status_code == 404:
