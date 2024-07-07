@@ -38,7 +38,7 @@ async def get_beatmap(beatmap_id: int) -> BeatmapExtended | None:
     osu_api_response_data: dict[str, Any] | None = None
     try:
         response = await osu_api_v2_http_client.get(f"beatmaps/{beatmap_id}")
-        if response.status_code == 404:
+        if response.status_code in (404, 451):
             return None
         response.raise_for_status()
         osu_api_response_data = response.json()
@@ -59,7 +59,7 @@ async def get_beatmapset(beatmapset_id: int) -> BeatmapsetExtended | None:
     osu_api_response_data: dict[str, Any] | None = None
     try:
         response = await osu_api_v2_http_client.get(f"beatmapsets/{beatmapset_id}")
-        if response.status_code == 404:
+        if response.status_code in (404, 451):
             return None
         response.raise_for_status()
         osu_api_response_data = response.json()

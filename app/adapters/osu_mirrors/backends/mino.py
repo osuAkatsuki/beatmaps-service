@@ -26,7 +26,7 @@ class MinoMirror(AbstractBeatmapMirror):
                 headers={"x-ratelimit-key": settings.MINO_INCREASED_RATELIMIT_KEY},
                 timeout=httpx.Timeout(None, connect=2),
             )
-            if response.status_code == 404:
+            if response.status_code in (404, 451):
                 return BeatmapMirrorResponse(
                     data=None,
                     is_success=True,
@@ -61,7 +61,7 @@ class MinoMirror(AbstractBeatmapMirror):
                 f"{self.base_url}/preview/background/{beatmap_id}",
                 timeout=httpx.Timeout(None, connect=2),
             )
-            if response.status_code == 404:
+            if response.status_code in (404, 451):
                 return BeatmapMirrorResponse(
                     data=None,
                     is_success=True,
