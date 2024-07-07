@@ -24,7 +24,7 @@ class OsuDirectMirror(AbstractBeatmapMirror):
                 f"{self.base_url}/api/d/{beatmapset_id}",
                 timeout=httpx.Timeout(None, connect=2),
             )
-            if response.status_code == 404:
+            if response.status_code in (404, 451):
                 return BeatmapMirrorResponse(
                     data=None,
                     is_success=True,
@@ -58,7 +58,7 @@ class OsuDirectMirror(AbstractBeatmapMirror):
                 f"{self.base_url}/api/media/background/{beatmap_id}",
                 timeout=httpx.Timeout(None, connect=2),
             )
-            if response.status_code == 404:
+            if response.status_code in (404, 451):
                 return BeatmapMirrorResponse(
                     data=None,
                     is_success=True,

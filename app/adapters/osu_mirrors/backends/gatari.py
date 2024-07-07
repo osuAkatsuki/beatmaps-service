@@ -24,7 +24,7 @@ class GatariMirror(AbstractBeatmapMirror):
                 f"{self.base_url}/d/{beatmapset_id}",
                 follow_redirects=True,
             )
-            if response.status_code == 404:
+            if response.status_code in (404, 451):
                 return BeatmapMirrorResponse(
                     data=None,
                     is_success=True,

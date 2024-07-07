@@ -21,7 +21,7 @@ class RippleMirror(AbstractBeatmapMirror):
             response = await self.http_client.get(
                 f"{self.base_url}/d/{beatmapset_id}",
             )
-            if response.status_code == 404:
+            if response.status_code in (404, 451):
                 return BeatmapMirrorResponse(
                     data=None,
                     is_success=True,

@@ -82,7 +82,7 @@ async def fetch_one_beatmap(
                 "authorized": True,
             },
         )
-        if response.status_code == 404:
+        if response.status_code in (404, 451):
             return None
         if response.status_code == 403:
             raise ValueError("osu api is down") from None
@@ -113,7 +113,7 @@ async def fetch_beatmap_osu_file_data(beatmap_id: int) -> bytes | None:
                 "authorized": False,
             },
         )
-        if response.status_code == 404:
+        if response.status_code in (404, 451):
             return None
         if response.status_code == 403:
             raise ValueError("osu api is down") from None
