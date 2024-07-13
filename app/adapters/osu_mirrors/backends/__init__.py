@@ -27,7 +27,7 @@ class AbstractBeatmapMirror(ABC):
     supported_resources: ClassVar[set[MirrorResource]]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self.http_client = httpx.AsyncClient()
+        self.http_client = httpx.AsyncClient(timeout=httpx.Timeout())
         self.weight = 0
         super().__init__(*args, **kwargs)
 

@@ -24,7 +24,6 @@ class MinoMirror(AbstractBeatmapMirror):
             response = await self.http_client.get(
                 f"{self.base_url}/d/{beatmapset_id}",
                 headers={"x-ratelimit-key": settings.MINO_INCREASED_RATELIMIT_KEY},
-                timeout=httpx.Timeout(None, connect=2),
             )
             if response.status_code in (404, 451):
                 return BeatmapMirrorResponse(
@@ -59,7 +58,6 @@ class MinoMirror(AbstractBeatmapMirror):
             logging.info(f"Fetching beatmap background from mino: {beatmap_id}")
             response = await self.http_client.get(
                 f"{self.base_url}/preview/background/{beatmap_id}",
-                timeout=httpx.Timeout(None, connect=2),
             )
             if response.status_code in (404, 451):
                 return BeatmapMirrorResponse(
