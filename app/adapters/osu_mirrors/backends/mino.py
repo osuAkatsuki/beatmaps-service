@@ -92,18 +92,8 @@ class MinoCentralMirror(MinoMirror):
     base_url = "https://central.catboy.best"
 
 
-class MinoUSCentralMirror(MinoMirror):
-    name = "mino-us-central"
-    base_url = "https://usc.catboy.best"
-
-
-class MinoUSEastMirror(MinoMirror):
-    name = "mino-us-east"
-    base_url = "https://use.catboy.best"
-
-
-class MinoUSWestMirror(MinoMirror):
-    name = "mino-us-west"
+class MinoUSMirror(MinoMirror):
+    name = "mino-us"
     base_url = "https://us.catboy.best"
 
 
