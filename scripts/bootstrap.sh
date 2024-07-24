@@ -21,6 +21,8 @@ if [[ $PULL_SECRETS_FROM_VAULT -eq 1 ]]; then
   echo "Sourced secrets from vault"
 fi
 
+/scripts/await-service.sh $DB_HOST $DB_PORT $SERVICE_READINESS_TIMEOUT
+
 if [[ $APP_COMPONENT == "api" ]]; then
   exec /scripts/run-api.sh
 else
