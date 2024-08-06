@@ -5,4 +5,5 @@ fastapi
 httpx
 python-dotenv
 python-json-logger
+pyyaml
 uvicorn
