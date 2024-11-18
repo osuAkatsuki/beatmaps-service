@@ -100,8 +100,3 @@ class MinoUSMirror(MinoMirror):
 class MinoSingaporeMirror(MinoMirror):
     name = "mino-singapore"
     base_url = "https://sg.catboy.best"
-
-
-class MinoBrazilMirror(MinoMirror):
-    name = "mino-brazil"
-    base_url = "https://br.catboy.best"
