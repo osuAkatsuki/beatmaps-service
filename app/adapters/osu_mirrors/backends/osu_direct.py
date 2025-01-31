@@ -1,5 +1,3 @@
-import logging
-
 import httpx
 from typing_extensions import override
 
