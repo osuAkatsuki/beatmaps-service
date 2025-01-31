@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - cheesegull-mirror-fallback
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
