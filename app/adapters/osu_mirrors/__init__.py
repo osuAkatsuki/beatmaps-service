@@ -10,6 +10,7 @@ from app.adapters.osu_mirrors.backends.osu_direct import OsuDirectMirror
 from app.adapters.osu_mirrors.selectors.dynamic_round_robin import (
     DynamicWeightedRoundRobinMirrorSelector,
 )
+from app.common_models import CheesegullBeatmap, CheesegullBeatmapset
 from app.repositories import beatmap_mirror_requests
 from app.repositories.beatmap_mirror_requests import MirrorResource
 
@@ -44,6 +45,124 @@ BACKGROUND_IMAGE_MIRROR_SELECTOR = DynamicWeightedRoundRobinMirrorSelector(
 
 def is_valid_zip_file(content: bytes) -> bool:
     return content.startswith(ZIP_FILE_HEADER)
+
+
+async def fetch_one_cheesegull_beatmap(beatmap_id: int) -> CheesegullBeatmap | None:
+    mirror = OsuDirectMirror()  # TODO
+
+    started_at = datetime.now()
+    mirror_response = await mirror.fetch_one_cheesegull_beatmap(beatmap_id)
+    ended_at = datetime.now()
+
+    await beatmap_mirror_requests.create(
+        request_url=mirror_response.request_url or "unavailable",
+        api_key_id=None,
+        mirror_name=mirror.name,
+        success=mirror_response.is_success,
+        started_at=started_at,
+        ended_at=ended_at,
+        response_status_code=mirror_response.status_code,
+        response_size=(
+            len(mirror_response.data.model_dump_json()) if mirror_response.data else 0
+        ),
+        response_error=mirror_response.error_message,
+        resource=MirrorResource.OSZ_FILE,
+    )
+
+    if not mirror_response.is_success:
+        logging.warning(
+            "Failed to fetch cheesegull beatmap from mirror",
+            exc_info=True,
+            extra={
+                "response": {
+                    "url": mirror_response.request_url,
+                    "status_code": mirror_response.status_code,
+                },
+                "mirror_name": mirror.name,
+                "mirror_weight": mirror.weight,
+                "beatmap_id": beatmap_id,
+            },
+        )
+        return None
+
+    ms_elapsed = (ended_at.timestamp() - started_at.timestamp()) * 1000
+
+    logging.info(
+        "Served cheesegull beatmap from mirror",
+        extra={
+            "mirror_name": mirror.name,
+            "mirror_weight": mirror.weight,
+            "beatmap_id": beatmap_id,
+            "ms_elapsed": ms_elapsed,
+            "data_size": (
+                len(mirror_response.data.model_dump_json())
+                if mirror_response.data
+                else 0
+            ),
+        },
+    )
+
+    return mirror_response.data
+
+
+async def fetch_one_cheesegull_beatmapset(
+    beatmapset_id: int,
+) -> CheesegullBeatmapset | None:
+    mirror = OsuDirectMirror()  # TODO
+
+    started_at = datetime.now()
+    mirror_response = await mirror.fetch_one_cheesegull_beatmapset(beatmapset_id)
+    ended_at = datetime.now()
+
+    await beatmap_mirror_requests.create(
+        request_url=mirror_response.request_url or "unavailable",
+        api_key_id=None,
+        mirror_name=mirror.name,
+        success=mirror_response.is_success,
+        started_at=started_at,
+        ended_at=ended_at,
+        response_status_code=mirror_response.status_code,
+        response_size=(
+            len(mirror_response.data.model_dump_json()) if mirror_response.data else 0
+        ),
+        response_error=mirror_response.error_message,
+        resource=MirrorResource.OSZ_FILE,
+    )
+
+    if not mirror_response.is_success:
+        logging.warning(
+            "Failed to fetch cheesegull beatmapset from mirror",
+            exc_info=True,
+            extra={
+                "response": {
+                    "url": mirror_response.request_url,
+                    "status_code": mirror_response.status_code,
+                },
+                "mirror_name": mirror.name,
+                "mirror_weight": mirror.weight,
+                "beatmapset_id": beatmapset_id,
+            },
+        )
+        return None
+
+    ms_elapsed = (ended_at.timestamp() - started_at.timestamp()) * 1000
+
+    logging.info(
+        "Served cheesegull beatmapset from mirror",
+        extra={
+            "mirror_name": mirror.name,
+            "mirror_weight": mirror.weight,
+            "beatmapset_id": beatmapset_id,
+            "ms_elapsed": ms_elapsed,
+            "data_size": (
+                len(mirror_response.data.model_dump_json())
+                if mirror_response.data
+                else 0
+            ),
+        },
+    )
+
+    return mirror_response.data
 
 
 async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
