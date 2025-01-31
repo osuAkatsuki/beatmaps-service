@@ -5,7 +5,8 @@ from typing_extensions import override
 
 from app.adapters.osu_mirrors.backends import AbstractBeatmapMirror
 from app.adapters.osu_mirrors.backends import BeatmapMirrorResponse
-from app.common_models import CheesegullBeatmap, CheesegullBeatmapset
+from app.common_models import CheesegullBeatmap
+from app.common_models import CheesegullBeatmapset
 from app.repositories.beatmap_mirror_requests import MirrorResource
 
 
