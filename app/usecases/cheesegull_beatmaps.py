@@ -1,17 +1,16 @@
-from datetime import datetime
 import logging
+from datetime import datetime
+
 from app.adapters import osu_mirrors
 from app.adapters.osu_api_v2 import api as osu_api_v2
 from app.adapters.osu_api_v2.models import BeatmapExtended
 from app.adapters.osu_api_v2.models import BeatmapsetExtended
 from app.adapters.osu_api_v2.models import Category
 from app.api.responses import JSONResponse
-from app.common_models import (
-    CheesegullBeatmap,
-    CheesegullBeatmapset,
-    CheesegullRankedStatus,
-    GameMode,
-)
+from app.common_models import CheesegullBeatmap
+from app.common_models import CheesegullBeatmapset
+from app.common_models import CheesegullRankedStatus
+from app.common_models import GameMode
 from app.common_models import RankedStatus
 
 
@@ -90,12 +89,12 @@ async def fetch_one_cheesegull_beatmap(
                 return None
 
             cheesegull_beatmap = cheesegull_beatmap_from_osu_api_beatmap(
-                osu_api_beatmap
+                osu_api_beatmap,
             )
         except Exception:
             # Fallback to mirror
             cheesegull_beatmap = await osu_mirrors.fetch_one_cheesegull_beatmap(
-                beatmap_id
+                beatmap_id,
             )
             if cheesegull_beatmap is None:
                 return None
@@ -138,7 +137,7 @@ async def fetch_one_cheesegull_beatmapset(
         except Exception:
             # Fallback to mirror
             cheesegull_beatmapset = await osu_mirrors.fetch_one_cheesegull_beatmapset(
-                beatmapset_id
+                beatmapset_id,
             )
             if cheesegull_beatmapset is None:
                 return None

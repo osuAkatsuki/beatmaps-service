@@ -7,7 +7,8 @@ from typing import TypeVar
 
 import httpx
 
-from app.common_models import CheesegullBeatmap, CheesegullBeatmapset
+from app.common_models import CheesegullBeatmap
+from app.common_models import CheesegullBeatmapset
 from app.repositories.beatmap_mirror_requests import MirrorResource
 
 T = TypeVar("T", covariant=True)

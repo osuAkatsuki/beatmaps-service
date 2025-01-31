@@ -8,8 +8,10 @@ from fastapi import APIRouter
 from fastapi import Header
 from fastapi import Query
 from fastapi import Response
+
 from app.api.responses import JSONResponse
-from app.common_models import CheesegullRankedStatus, GameMode
+from app.common_models import CheesegullRankedStatus
+from app.common_models import GameMode
 from app.usecases import cheesegull_beatmaps
 
 router = APIRouter(tags=["(Public) Cheesegull API"])

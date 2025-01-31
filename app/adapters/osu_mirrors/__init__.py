@@ -10,7 +10,8 @@ from app.adapters.osu_mirrors.backends.osu_direct import OsuDirectMirror
 from app.adapters.osu_mirrors.selectors.dynamic_round_robin import (
     DynamicWeightedRoundRobinMirrorSelector,
 )
-from app.common_models import CheesegullBeatmap, CheesegullBeatmapset
+from app.common_models import CheesegullBeatmap
+from app.common_models import CheesegullBeatmapset
 from app.repositories import beatmap_mirror_requests
 from app.repositories.beatmap_mirror_requests import MirrorResource
 
