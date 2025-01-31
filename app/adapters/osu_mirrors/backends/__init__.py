@@ -47,7 +47,7 @@ class AbstractBeatmapMirror(ABC):
         beatmapset_id: int,
     ) -> BeatmapMirrorResponse[CheesegullBeatmapset | None]:
         """Fetch a cheesegull beatmapset from a beatmap mirror."""
-        raise NotImplementedError
+        raise NotImplementedError()
 
     async def fetch_beatmap_zip_data(
         self,
