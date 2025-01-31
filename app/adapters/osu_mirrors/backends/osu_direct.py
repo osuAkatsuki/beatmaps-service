@@ -32,7 +32,7 @@ class OsuDirectMirror(AbstractBeatmapMirror):
                 )
             response.raise_for_status()
             return BeatmapMirrorResponse(
-                data=response.json(),
+                data=CheesegullBeatmap.model_validate(response.json()),
                 is_success=True,
                 request_url=str(response.request.url),
                 status_code=response.status_code,
@@ -65,7 +65,7 @@ class OsuDirectMirror(AbstractBeatmapMirror):
                 )
             response.raise_for_status()
             return BeatmapMirrorResponse(
-                data=response.json(),
+                data=CheesegullBeatmapset.model_validate(response.json()),
                 is_success=True,
                 request_url=str(response.request.url),
                 status_code=response.status_code,
