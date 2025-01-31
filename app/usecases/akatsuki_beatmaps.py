@@ -156,10 +156,19 @@ async def fetch_one_by_id(beatmap_id: int) -> AkatsukiBeatmap | None:
         beatmap = await akatsuki_beatmaps.create_or_replace(new_beatmap)
 
     elif beatmap.deserves_update:
-        beatmap = await _update_from_osu_api(beatmap)
-        if beatmap is None:
-            # (we may have deleted the map during the update)
-            return None
+        try:
+            beatmap = await _update_from_osu_api(beatmap)
+            if beatmap is None:
+                # (we may have deleted the map during the update)
+                return None
+        except Exception:
+            logging.warning(
+                "Failed to update beatmap requested by id (using old beatmap for now)",
+                extra={
+                    "beatmap": beatmap.model_dump() if beatmap else None,
+                    "beatmap_id": beatmap_id,
+                },
+            )
 
     return beatmap
 
@@ -177,9 +186,18 @@ async def fetch_one_by_md5(beatmap_md5: str) -> AkatsukiBeatmap | None:
         beatmap = await akatsuki_beatmaps.create_or_replace(new_beatmap)
 
     elif beatmap.deserves_update:
-        beatmap = await _update_from_osu_api(beatmap)
-        if beatmap is None:
-            # (we may have deleted the map during the update)
-            return None
+        try:
+            beatmap = await _update_from_osu_api(beatmap)
+            if beatmap is None:
+                # (we may have deleted the map during the update)
+                return None
+        except Exception:
+            logging.warning(
+                "Failed to update beatmap requested by md5 (using old beatmap for now)",
+                extra={
+                    "beatmap": beatmap.model_dump() if beatmap else None,
+                    "beatmap_md5": beatmap_md5,
+                },
+            )
 
     return beatmap
