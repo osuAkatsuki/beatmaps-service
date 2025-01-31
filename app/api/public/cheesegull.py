@@ -14,7 +14,7 @@ from fastapi import Query
 from fastapi import Response
 from pydantic import BaseModel
 
-from app.adapters.osu_api_v2 import api
+from app.adapters.osu_api_v2 import api as osu_api_v2
 from app.adapters.osu_api_v2.models import BeatmapExtended
 from app.adapters.osu_api_v2.models import BeatmapsetExtended
 from app.adapters.osu_api_v2.models import Category
@@ -126,7 +126,7 @@ async def cheesegull_beatmap(
     client_ip_address: str | None = Header(None, alias="X-Real-IP"),
     client_user_agent: str | None = Header(None, alias="User-Agent"),
 ) -> Response:
-    osu_api_beatmap = await api.get_beatmap(beatmap_id)
+    osu_api_beatmap = await osu_api_v2.get_beatmap(beatmap_id)
     if osu_api_beatmap is None:
         return Response(status_code=404)
 
@@ -148,7 +148,7 @@ async def cheesegull_beatmapset(
     client_ip_address: str | None = Header(None, alias="X-Real-IP"),
     client_user_agent: str | None = Header(None, alias="User-Agent"),
 ) -> Response:
-    osu_api_beatmapset = await api.get_beatmapset(beatmapset_id)
+    osu_api_beatmapset = await osu_api_v2.get_beatmapset(beatmapset_id)
     if osu_api_beatmapset is None:
         return Response(status_code=404)
 
@@ -205,7 +205,7 @@ async def cheesegull_search(
     cheesegull_beatmapsets: list[CheesegullBeatmapset] = []
     page = offset // amount + 1
     while num_fetched < amount:
-        osu_api_search_response = await api.search_beatmapsets(
+        osu_api_search_response = await osu_api_v2.search_beatmapsets(
             query=query,
             mode=mode,
             category=ranked_status,
