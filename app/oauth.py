@@ -66,7 +66,7 @@ class AsyncOAuth(httpx.Auth):
             refresh_response_data = refresh_response.json()
             if "access_token" not in refresh_response_data:
                 logging.warning(
-                    "Failed to get access token", extra=refresh_response_data
+                    "Failed to get access token", extra=refresh_response_data,
                 )
             client_credentials.access_token = refresh_response_data["access_token"]
 
@@ -79,7 +79,7 @@ class AsyncOAuth(httpx.Auth):
             refresh_response_data = refresh_response.json()
             if "access_token" not in refresh_response_data:
                 logging.warning(
-                    "Failed to get access token", extra=refresh_response_data
+                    "Failed to get access token", extra=refresh_response_data,
                 )
             client_credentials.access_token = refresh_response_data["access_token"]
 
