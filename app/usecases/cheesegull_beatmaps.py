@@ -88,8 +88,10 @@ async def fetch_one_cheesegull_beatmap(
             if osu_api_beatmap is None:
                 return None
 
-            cheesegull_beatmap = cheesegull_beatmap_from_osu_api_beatmap(
-                osu_api_beatmap,
+            cheesegull_beatmap: CheesegullBeatmap | None = (
+                cheesegull_beatmap_from_osu_api_beatmap(
+                    osu_api_beatmap,
+                )
             )
         except Exception:
             # Fallback to mirror
@@ -131,8 +133,10 @@ async def fetch_one_cheesegull_beatmapset(
             osu_api_beatmapset = await osu_api_v2.get_beatmapset(beatmapset_id)
             if osu_api_beatmapset is None:
                 return None
-            cheesegull_beatmapset = cheesegull_beatmapset_from_osu_api_beatmapset(
-                osu_api_beatmapset,
+            cheesegull_beatmapset: CheesegullBeatmapset | None = (
+                cheesegull_beatmapset_from_osu_api_beatmapset(
+                    osu_api_beatmapset,
+                )
             )
         except Exception:
             # Fallback to mirror
