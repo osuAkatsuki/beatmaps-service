@@ -72,19 +72,23 @@ async def _update_from_osu_api(old_beatmap: AkatsukiBeatmap) -> AkatsukiBeatmap 
     if not old_beatmap.deserves_update:
         return old_beatmap
 
-    new_osu_api_v1_beatmap = await osu_api_v1.fetch_one_beatmap(
-        beatmap_id=old_beatmap.beatmap_id,
-    )
-    if new_osu_api_v1_beatmap is None:
-        # The map has been unsubmitted by the mapper or staff
-        # on the official osu! servers. We'll delete it as well.
-        logging.info(
-            "Deleting unsubmitted beatmap",
-            extra={"beatmap": old_beatmap.model_dump()},
+    try:
+        new_osu_api_v1_beatmap = await osu_api_v1.fetch_one_beatmap(
+            beatmap_id=old_beatmap.beatmap_id,
         )
-        await akatsuki_beatmaps.delete_by_md5(old_beatmap.beatmap_md5)
-        await aws_s3.delete_object(f"/beatmaps/{old_beatmap.beatmap_id}.osu")
-        return None
+        if new_osu_api_v1_beatmap is None:
+            # The map has been unsubmitted by the mapper or staff
+            # on the official osu! servers. We'll delete it as well.
+            logging.info(
+                "Deleting unsubmitted beatmap",
+                extra={"beatmap": old_beatmap.model_dump()},
+            )
+            await akatsuki_beatmaps.delete_by_md5(old_beatmap.beatmap_md5)
+            await aws_s3.delete_object(f"/beatmaps/{old_beatmap.beatmap_id}.osu")
+            return None
+    except Exception:
+        # TODO: fallback to beatmap mirror
+        raise
 
     new_beatmap = _parse_akatsuki_beatmap_from_osu_api_v1_response(
         new_osu_api_v1_beatmap,
