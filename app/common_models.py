@@ -1,4 +1,7 @@
+from datetime import datetime
 from enum import IntEnum
+
+from pydantic import BaseModel
 
 
 class RankedStatus(IntEnum):
@@ -58,3 +61,49 @@ class GameMode(IntEnum):
     TAIKO = 1
     FRUITS = 2
     MANIA = 3
+
+
+class CheesegullRankedStatus(IntEnum):
+    # This is a limited subset of the osu! api ranked status
+    PENDING = 0
+    RANKED = 1
+    APPROVED = 2
+    QUALIFIED = 3
+    LOVED = 4
+
+
+class CheesegullBeatmap(BaseModel):
+    BeatmapID: int
+    ParentSetID: int
+    DiffName: str
+    FileMD5: str
+    Mode: int
+    BPM: float
+    AR: float
+    OD: float
+    CS: float
+    HP: float
+    TotalLength: int
+    HitLength: int
+    Playcount: int
+    Passcount: int
+    MaxCombo: int
+    DifficultyRating: float
+
+
+class CheesegullBeatmapset(BaseModel):
+    SetID: int
+    ChildrenBeatmaps: list[CheesegullBeatmap]
+    RankedStatus: int
+    ApprovedDate: datetime
+    LastUpdate: datetime
+    LastChecked: datetime
+    Artist: str
+    Title: str
+    Creator: str
+    Source: str
+    Tags: str
+    HasVideo: bool
+    Genre: int | None
+    Language: int | None
+    Favourites: int

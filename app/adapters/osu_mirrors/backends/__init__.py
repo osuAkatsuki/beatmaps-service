@@ -7,6 +7,8 @@ from typing import TypeVar
 
 import httpx
 
+from app.common_models import CheesegullBeatmap
+from app.common_models import CheesegullBeatmapset
 from app.repositories.beatmap_mirror_requests import MirrorResource
 
 T = TypeVar("T", covariant=True)
@@ -32,6 +34,20 @@ class AbstractBeatmapMirror(ABC):
         )
         self.weight = 0
         super().__init__(*args, **kwargs)
+
+    async def fetch_one_cheesegull_beatmap(
+        self,
+        beatmap_id: int,
+    ) -> BeatmapMirrorResponse[CheesegullBeatmap | None]:
+        """Fetch a cheesegull beatmap from a beatmap mirror."""
+        raise NotImplementedError()
+
+    async def fetch_one_cheesegull_beatmapset(
+        self,
+        beatmapset_id: int,
+    ) -> BeatmapMirrorResponse[CheesegullBeatmapset | None]:
+        """Fetch a cheesegull beatmapset from a beatmap mirror."""
+        raise NotImplementedError()
 
     async def fetch_beatmap_zip_data(
         self,

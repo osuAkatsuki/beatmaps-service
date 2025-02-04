@@ -63,7 +63,13 @@ class AsyncOAuth(httpx.Auth):
         if client_credentials.access_token is None:
             refresh_response = yield self.build_refresh_request(client_credentials)
             await refresh_response.aread()
-            client_credentials.access_token = refresh_response.json()["access_token"]
+            refresh_response_data = refresh_response.json()
+            if "access_token" not in refresh_response_data:
+                logging.warning(
+                    "Failed to get oauth access token",
+                    extra={"response_data": refresh_response_data},
+                )
+            client_credentials.access_token = refresh_response_data["access_token"]
 
         request.headers["Authorization"] = f"Bearer {client_credentials.access_token}"
         response = yield request
@@ -71,7 +77,13 @@ class AsyncOAuth(httpx.Auth):
         while response.status_code == 401:
             refresh_response = yield self.build_refresh_request(client_credentials)
             await refresh_response.aread()
-            client_credentials.access_token = refresh_response.json()["access_token"]
+            refresh_response_data = refresh_response.json()
+            if "access_token" not in refresh_response_data:
+                logging.warning(
+                    "Failed to get oauth access token",
+                    extra={"response_data": refresh_response_data},
+                )
+            client_credentials.access_token = refresh_response_data["access_token"]
 
             request.headers["Authorization"] = (
                 f"Bearer {client_credentials.access_token}"
