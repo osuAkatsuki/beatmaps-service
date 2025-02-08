@@ -67,7 +67,12 @@ class AsyncOAuth(httpx.Auth):
             if "access_token" not in refresh_response_data:
                 logging.warning(
                     "Failed to get oauth access token",
-                    extra={"response_data": refresh_response_data},
+                    extra={
+                        "data": refresh_response_data,
+                        "client_credentials": {
+                            "client_id": client_credentials.client_id
+                        },
+                    },
                 )
             client_credentials.access_token = refresh_response_data["access_token"]
 
@@ -81,7 +86,12 @@ class AsyncOAuth(httpx.Auth):
             if "access_token" not in refresh_response_data:
                 logging.warning(
                     "Failed to get oauth access token",
-                    extra={"response_data": refresh_response_data},
+                    extra={
+                        "data": refresh_response_data,
+                        "client_credentials": {
+                            "client_id": client_credentials.client_id
+                        },
+                    },
                 )
             client_credentials.access_token = refresh_response_data["access_token"]
 
