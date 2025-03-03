@@ -70,7 +70,7 @@ class AsyncOAuth(httpx.Auth):
                     extra={
                         "data": refresh_response_data,
                         "client_credentials": {
-                            "client_id": client_credentials.client_id
+                            "client_id": client_credentials.client_id,
                         },
                     },
                 )
@@ -89,7 +89,7 @@ class AsyncOAuth(httpx.Auth):
                     extra={
                         "data": refresh_response_data,
                         "client_credentials": {
-                            "client_id": client_credentials.client_id
+                            "client_id": client_credentials.client_id,
                         },
                     },
                 )
