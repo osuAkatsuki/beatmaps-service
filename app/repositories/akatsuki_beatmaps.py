@@ -135,7 +135,8 @@ async def fetch_one_by_id(beatmap_id: int, /) -> AkatsukiBeatmap | None:
         bancho_creator_id=rec["bancho_creator_id"],
         bancho_creator_name=rec["bancho_creator_name"],
     )
-    
+
+
 async def fetch_many_maps_with_custom_akatsuki_status() -> list[AkatsukiBeatmap]:
     query = """\
         SELECT * FROM beatmaps WHERE ranked_status_freezed = 1 ORDER BY lastest_updated
@@ -171,9 +172,8 @@ async def fetch_many_maps_with_custom_akatsuki_status() -> list[AkatsukiBeatmap]
         )
         akatsuki_maps_with_custom_status.append(beatmap)
     return akatsuki_maps_with_custom_status
-    
-    
-    
+
+
 async def create_or_replace(beatmap: AkatsukiBeatmap) -> AkatsukiBeatmap:
     query = """\
         REPLACE INTO beatmaps (

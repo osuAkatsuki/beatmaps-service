@@ -16,4 +16,6 @@ router = APIRouter(tags=["Akatsuki Beatmaps"])
 @router.get("/api/akatsuki/v1/beatmaps/custom-ranked-beatmaps")
 async def fetch_all_custom_ranked_beatmaps() -> Response:
     beatmaps = await akatsuki_beatmaps.fetch_all_custom_ranked_beatmaps()
-    return JSONResponse(content=[AkatsukiBeatmap.model_dump() for AkatsukiBeatmap in beatmaps])
+    return JSONResponse(
+        content=[AkatsukiBeatmap.model_dump() for AkatsukiBeatmap in beatmaps],
+    )
