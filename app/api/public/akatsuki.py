@@ -13,6 +13,8 @@ from app.api.responses import JSONResponse
 from app.usecases import akatsuki_beatmaps
 
 router = APIRouter(tags=["Akatsuki Beatmaps"])
+
+
 @router.get("/api/akatsuki/v1/beatmaps/custom-ranked-beatmaps")
 async def fetch_all_custom_ranked_beatmaps() -> Response:
     beatmaps = await akatsuki_beatmaps.fetch_all_custom_ranked_beatmaps()
