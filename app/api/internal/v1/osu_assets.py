@@ -19,7 +19,7 @@ async def get_beatmap_background(
     if background_image_data is None:
         return Response(status_code=404)
 
-    logging.info(
+    logging.debug(
         "Serving osu! API v2 background",
         extra={
             "beatmap_id": beatmap_id,

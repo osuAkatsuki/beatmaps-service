@@ -101,15 +101,17 @@ class AsyncOAuth(httpx.Auth):
             response = yield request
 
         # TODO: refactor this log to work with osu api v1, be more specific etc.
-        logging.info(
-            "Made oauth-authorized request",
-            extra={
-                "request_url": request.url._uri_reference._asdict(),
-                "ratelimit": {
-                    "remaining": response.headers.get("X-Ratelimit-Remaining"),
-                    "limit": response.headers.get("X-Ratelimit-Limit"),
-                    "reset_utc": response.headers.get("X-Ratelimit-Reset"),
+        remaining_requests = int(response.headers.get("X-Ratelimit-Remaining", 9999))
+        if remaining_requests < 300:
+            logging.warning(
+                "Low oauth rate limit remaining",
+                extra={
+                    "request_url": request.url._uri_reference._asdict(),
+                    "ratelimit": {
+                        "remaining": response.headers.get("X-Ratelimit-Remaining"),
+                        "limit": response.headers.get("X-Ratelimit-Limit"),
+                        "reset_utc": response.headers.get("X-Ratelimit-Reset"),
+                    },
+                    "client_credentials": {"client_id": client_credentials.client_id},
                 },
-                "client_credentials": {"client_id": client_credentials.client_id},
-            },
-        )
+            )
