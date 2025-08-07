@@ -88,7 +88,7 @@ async def fetch_one_cheesegull_beatmap(beatmap_id: int) -> CheesegullBeatmap | N
 
     ms_elapsed = (ended_at.timestamp() - started_at.timestamp()) * 1000
 
-    logging.info(
+    logging.debug(
         "Served cheesegull beatmap from mirror",
         extra={
             "mirror_name": mirror.name,
@@ -148,7 +148,7 @@ async def fetch_one_cheesegull_beatmapset(
 
     ms_elapsed = (ended_at.timestamp() - started_at.timestamp()) * 1000
 
-    logging.info(
+    logging.debug(
         "Served cheesegull beatmapset from mirror",
         extra={
             "mirror_name": mirror.name,
@@ -241,7 +241,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
 
     ms_elapsed = (ended_at.timestamp() - started_at.timestamp()) * 1000
 
-    logging.info(
+    logging.debug(
         "Served beatmapset osz from mirror",
         extra={
             "mirror_name": mirror.name,
@@ -322,7 +322,7 @@ async def fetch_beatmap_background_image(beatmap_id: int) -> bytes | None:
 
     ms_elapsed = (ended_at.timestamp() - started_at.timestamp()) * 1000
 
-    logging.info(
+    logging.debug(
         "Served beatmap background image from mirror",
         extra={
             "mirror_name": mirror.name,

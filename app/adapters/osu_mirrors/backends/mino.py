@@ -55,7 +55,6 @@ class MinoMirror(AbstractBeatmapMirror):
     ) -> BeatmapMirrorResponse[bytes | None]:
         response: httpx.Response | None = None
         try:
-            logging.info(f"Fetching beatmap background from mino: {beatmap_id}")
             response = await self.http_client.get(
                 f"{self.base_url}/preview/background/{beatmap_id}",
             )

@@ -176,8 +176,6 @@ class Webhook:
 async def wrap_hook(webhook_url: str, embed: Embed) -> None:
     """Handles sending the webhook to discord."""
 
-    logging.info("Sending Discord webhook!")
-
     try:
         wh = Webhook(webhook_url, tts=False, username="LESS Score Server")
         wh.add_embed(embed)

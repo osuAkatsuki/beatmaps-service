@@ -31,7 +31,7 @@ async def get_beatmapset(
     if osu_api_beatmapset is None:
         return Response(status_code=404)
 
-    logging.info(
+    logging.debug(
         "Serving osu! API v2 beatmapset",
         extra={
             "beatmapset_id": beatmapset_id,
@@ -53,7 +53,7 @@ async def get_beatmap(
     if osu_api_beatmap is None:
         return Response(status_code=404)
 
-    logging.info(
+    logging.debug(
         "Serving osu! API v2 beatmap",
         extra={
             "beatmap_id": beatmap_id,

@@ -74,7 +74,7 @@ async def fetch_one_beatmap(
                 **({"b": beatmap_id} if beatmap_id else {"h": beatmap_md5}),
             },
         )
-        logging.info(
+        logging.debug(
             "Made request to the v1 osu! api",
             extra={
                 "endpoint": "get_beatmaps",
@@ -106,7 +106,7 @@ async def fetch_one_beatmap(
 async def fetch_beatmap_osu_file_data(beatmap_id: int) -> bytes | None:
     try:
         response = await osu_api_v1_http_client.get(f"osu/{beatmap_id}")
-        logging.info(
+        logging.debug(
             "Made request to the v1 osu! api",
             extra={
                 "endpoint": "osu_file",
