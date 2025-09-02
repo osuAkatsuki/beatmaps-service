@@ -2,9 +2,10 @@ import logging
 from datetime import datetime
 
 from app.adapters.osu_mirrors.backends import AbstractBeatmapMirror
-from app.adapters.osu_mirrors.backends.mino import MinoCentralMirror
-from app.adapters.osu_mirrors.backends.mino import MinoSingaporeMirror
-from app.adapters.osu_mirrors.backends.mino import MinoUSMirror
+from app.adapters.osu_mirrors.backends.mino import MinoMirror
+# from app.adapters.osu_mirrors.backends.mino import MinoCentralMirror
+# from app.adapters.osu_mirrors.backends.mino import MinoSingaporeMirror
+# from app.adapters.osu_mirrors.backends.mino import MinoUSMirror
 from app.adapters.osu_mirrors.backends.nerinyan import NerinyanMirror
 from app.adapters.osu_mirrors.backends.osu_direct import OsuDirectMirror
 from app.adapters.osu_mirrors.selectors.dynamic_round_robin import (
@@ -18,9 +19,10 @@ from app.repositories.beatmap_mirror_requests import MirrorResource
 ZIP_FILE_HEADER = b"PK\x03\x04"
 
 BEATMAP_MIRRORS: list[AbstractBeatmapMirror] = [
-    MinoCentralMirror(),
-    MinoUSMirror(),
-    MinoSingaporeMirror(),
+    MinoMirror(),
+    # MinoCentralMirror(),
+    # MinoUSMirror(),
+    # MinoSingaporeMirror(),
     NerinyanMirror(),
     OsuDirectMirror(),
     # GatariMirror(),  # Disabled as ratelimit is very low
