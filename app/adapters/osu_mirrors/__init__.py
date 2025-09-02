@@ -3,6 +3,7 @@ from datetime import datetime
 
 from app.adapters.osu_mirrors.backends import AbstractBeatmapMirror
 from app.adapters.osu_mirrors.backends.mino import MinoMirror
+
 # from app.adapters.osu_mirrors.backends.mino import MinoCentralMirror
 # from app.adapters.osu_mirrors.backends.mino import MinoSingaporeMirror
 # from app.adapters.osu_mirrors.backends.mino import MinoUSMirror
