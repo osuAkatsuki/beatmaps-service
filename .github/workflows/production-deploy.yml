@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - les-mirrors
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
