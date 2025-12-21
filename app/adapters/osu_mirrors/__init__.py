@@ -176,15 +176,23 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
 
     await OSZ_FILE_MIRROR_SELECTOR.update_all_mirror_and_selector_weights()
 
-    # Retry up to 2x the number of mirrors
+    # Retry up to 2x the number of mirrors, with extra iterations for skipped attempts
     max_attempts = OSZ_FILE_MIRROR_SELECTOR.get_num_mirrors() * 2
-    for attempt in range(max_attempts):
+    max_iterations = max_attempts * 2  # Allow for skipped iterations due to prev_mirror
+    actual_attempts = 0
+
+    for _ in range(max_iterations):
+        if actual_attempts >= max_attempts:
+            break
+
         mirror = OSZ_FILE_MIRROR_SELECTOR.select_mirror()
         if mirror is prev_mirror:
             # don't allow the same mirror to be run twice, to help
             # prevent loops which cause the mirror to lose all weighting
             # because of an error on a single beatmapset
             continue
+
+        actual_attempts += 1
 
         started_at = datetime.now()
         mirror_response = await mirror.fetch_beatmap_zip_data(beatmapset_id)
@@ -260,15 +268,23 @@ async def fetch_beatmap_background_image(beatmap_id: int) -> bytes | None:
 
     await BACKGROUND_IMAGE_MIRROR_SELECTOR.update_all_mirror_and_selector_weights()
 
-    # Retry up to 2x the number of mirrors
+    # Retry up to 2x the number of mirrors, with extra iterations for skipped attempts
     max_attempts = BACKGROUND_IMAGE_MIRROR_SELECTOR.get_num_mirrors() * 2
-    for attempt in range(max_attempts):
+    max_iterations = max_attempts * 2  # Allow for skipped iterations due to prev_mirror
+    actual_attempts = 0
+
+    for _ in range(max_iterations):
+        if actual_attempts >= max_attempts:
+            break
+
         mirror = BACKGROUND_IMAGE_MIRROR_SELECTOR.select_mirror()
         if mirror is prev_mirror:
             # don't allow the same mirror to be run twice, to help
             # prevent loops which cause the mirror to lose all weighting
             # because of an error on a single beatmapset
             continue
+
+        actual_attempts += 1
 
         started_at = datetime.now()
         mirror_response = await mirror.fetch_beatmap_background_image(beatmap_id)
