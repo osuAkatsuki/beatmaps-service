@@ -41,7 +41,16 @@ class DynamicWeightedRoundRobinMirrorSelector(AbstractMirrorSelector):
         )
 
     def select_mirror(self) -> AbstractBeatmapMirror:
-        while True:
+        # Maximum iterations is bounded by the number of mirrors * max_weight / gcd_weight
+        # Add safety factor of 2x to handle edge cases
+        max_iterations = (
+            len(self.mirrors) * (self.max_weight // max(self.gcd_weight, 1)) * 2
+        )
+        max_iterations = max(
+            max_iterations, len(self.mirrors) * 10
+        )  # Ensure minimum iterations
+
+        for _ in range(max_iterations):
             self.index = (self.index + 1) % len(self.mirrors)
             if self.index == 0:
                 self.current_weight -= self.gcd_weight
@@ -52,6 +61,12 @@ class DynamicWeightedRoundRobinMirrorSelector(AbstractMirrorSelector):
 
             if self.mirrors[self.index].weight >= self.current_weight:
                 return self.mirrors[self.index]
+
+        # This should never happen in practice with correct weights, but provides safety
+        raise RuntimeError(
+            f"Failed to select a mirror after {max_iterations} iterations. "
+            "This indicates a bug in the weighted round-robin algorithm."
+        )
 
     def get_num_mirrors(self) -> int:
         return len(self.mirrors)
