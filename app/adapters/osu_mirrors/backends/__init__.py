@@ -35,6 +35,7 @@ class AbstractBeatmapMirror(ABC):
         self.http_client = httpx.AsyncClient(
             headers={"User-Agent": "Akatsuki-Beatmaps-Service/1.0"},
             timeout=httpx.Timeout(10.0, connect=5.0),
+            follow_redirects=True,
         )
         # Initialize health tracking with optional rate limiter
         rate_limiter = None
