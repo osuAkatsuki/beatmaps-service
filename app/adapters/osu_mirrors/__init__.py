@@ -25,17 +25,17 @@ ZIP_FILE_HEADER = b"PK\x03\x04"
 # How many mirrors to race simultaneously
 HEDGE_COUNT = 2
 
-# Max length for error messages stored in database (column is varchar(255))
-MAX_ERROR_LENGTH = 255
+# Max length for varchar(255) columns in database
+MAX_VARCHAR_LENGTH = 255
 
 
-def truncate_error(error: str | None) -> str | None:
-    """Truncate error message to fit database column."""
-    if error is None:
+def truncate_string(s: str | None) -> str | None:
+    """Truncate string to fit varchar(255) database column."""
+    if s is None:
         return None
-    if len(error) > MAX_ERROR_LENGTH:
-        return error[: MAX_ERROR_LENGTH - 3] + "..."
-    return error
+    if len(s) > MAX_VARCHAR_LENGTH:
+        return s[: MAX_VARCHAR_LENGTH - 3] + "..."
+    return s
 
 
 BEATMAP_MIRRORS: list[AbstractBeatmapMirror] = [
@@ -135,7 +135,7 @@ async def hedged_fetch(
 
                 # Log the request for metrics
                 await beatmap_mirror_requests.create(
-                    request_url=response.request_url or "unavailable",
+                    request_url=truncate_string(response.request_url) or "unavailable",
                     api_key_id=None,
                     mirror_name=mirror.name,
                     success=response.is_success,
@@ -143,7 +143,7 @@ async def hedged_fetch(
                     ended_at=datetime.now(),
                     response_status_code=response.status_code,
                     response_size=len(response.data) if response.data else 0,
-                    response_error=truncate_error(response.error_message),
+                    response_error=truncate_string(response.error_message),
                     resource=resource,
                 )
 
@@ -242,7 +242,7 @@ async def fetch_with_fallback(
 
         # Log the request
         await beatmap_mirror_requests.create(
-            request_url=response.request_url or "unavailable",
+            request_url=truncate_string(response.request_url) or "unavailable",
             api_key_id=None,
             mirror_name=mirror.name,
             success=response.is_success,
@@ -250,7 +250,7 @@ async def fetch_with_fallback(
             ended_at=datetime.now(),
             response_status_code=response.status_code,
             response_size=len(response.data) if response.data else 0,
-            response_error=truncate_error(response.error_message),
+            response_error=truncate_string(response.error_message),
             resource=resource,
         )
 
