@@ -25,8 +25,8 @@ ZIP_FILE_HEADER = b"PK\x03\x04"
 # How many mirrors to race simultaneously
 HEDGE_COUNT = 2
 
-# Max length for error messages stored in database
-MAX_ERROR_LENGTH = 512
+# Max length for error messages stored in database (column is varchar(255))
+MAX_ERROR_LENGTH = 255
 
 
 def truncate_error(error: str | None) -> str | None:
