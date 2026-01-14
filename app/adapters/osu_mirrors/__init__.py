@@ -25,6 +25,19 @@ ZIP_FILE_HEADER = b"PK\x03\x04"
 # How many mirrors to race simultaneously
 HEDGE_COUNT = 2
 
+# Max length for error messages stored in database
+MAX_ERROR_LENGTH = 512
+
+
+def truncate_error(error: str | None) -> str | None:
+    """Truncate error message to fit database column."""
+    if error is None:
+        return None
+    if len(error) > MAX_ERROR_LENGTH:
+        return error[: MAX_ERROR_LENGTH - 3] + "..."
+    return error
+
+
 BEATMAP_MIRRORS: list[AbstractBeatmapMirror] = [
     OsuDirectMirror(),
     MinoCentralMirror(),
@@ -130,7 +143,7 @@ async def hedged_fetch(
                     ended_at=datetime.now(),
                     response_status_code=response.status_code,
                     response_size=len(response.data) if response.data else 0,
-                    response_error=response.error_message,
+                    response_error=truncate_error(response.error_message),
                     resource=resource,
                 )
 
@@ -237,7 +250,7 @@ async def fetch_with_fallback(
             ended_at=datetime.now(),
             response_status_code=response.status_code,
             response_size=len(response.data) if response.data else 0,
-            response_error=response.error_message,
+            response_error=truncate_error(response.error_message),
             resource=resource,
         )
 
