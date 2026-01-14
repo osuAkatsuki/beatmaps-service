@@ -49,8 +49,19 @@ BEATMAP_MIRRORS: list[AbstractBeatmapMirror] = [
 ]
 
 
-def is_valid_zip_file(content: bytes) -> bool:
+def is_valid_zip_file(content: bytes | None) -> bool:
+    if content is None:
+        return False
     return content.startswith(ZIP_FILE_HEADER)
+
+
+def get_data_size(data: object) -> int:
+    """Get the size of response data, returning 0 if not applicable."""
+    if data is None:
+        return 0
+    if isinstance(data, (bytes, str)):
+        return len(data)
+    return 0
 
 
 def get_available_mirrors(
@@ -142,7 +153,7 @@ async def hedged_fetch(
                     started_at=datetime.fromtimestamp(time.time() - elapsed),
                     ended_at=datetime.now(),
                     response_status_code=response.status_code,
-                    response_size=len(response.data) if response.data else 0,
+                    response_size=get_data_size(response.data),
                     response_error=truncate_string(response.error_message),
                     resource=resource,
                 )
@@ -249,7 +260,7 @@ async def fetch_with_fallback(
             started_at=datetime.fromtimestamp(started_at),
             ended_at=datetime.now(),
             response_status_code=response.status_code,
-            response_size=len(response.data) if response.data else 0,
+            response_size=get_data_size(response.data),
             response_error=truncate_string(response.error_message),
             resource=resource,
         )

@@ -83,8 +83,10 @@ class TokenBucket:
         """Refill tokens based on elapsed time."""
         now = time.time()
         elapsed = now - self.last_update
+        # bucket_size is guaranteed to be set after __post_init__
+        assert self.bucket_size is not None
         self.tokens = min(
-            self.bucket_size,  # type: ignore[arg-type]
+            self.bucket_size,
             self.tokens + elapsed * self.tokens_per_second,
         )
         self.last_update = now
