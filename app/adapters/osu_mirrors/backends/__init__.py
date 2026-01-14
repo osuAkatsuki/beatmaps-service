@@ -7,6 +7,8 @@ from typing import TypeVar
 
 import httpx
 
+from app.adapters.osu_mirrors.resilience import MirrorHealth
+from app.adapters.osu_mirrors.resilience import TokenBucket
 from app.common_models import CheesegullBeatmap
 from app.common_models import CheesegullBeatmapset
 from app.repositories.beatmap_mirror_requests import MirrorResource
@@ -27,12 +29,21 @@ class AbstractBeatmapMirror(ABC):
     name: ClassVar[str]
     base_url: ClassVar[str]
     supported_resources: ClassVar[set[MirrorResource]]
+    requests_per_second: ClassVar[float | None] = None  # Rate limit, if known
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.http_client = httpx.AsyncClient(
             headers={"User-Agent": "Akatsuki-Beatmaps-Service/1.0"},
+            timeout=httpx.Timeout(10.0, connect=5.0),
         )
-        self.weight = 0
+        # Initialize health tracking with optional rate limiter
+        rate_limiter = None
+        if self.requests_per_second is not None:
+            rate_limiter = TokenBucket(
+                tokens_per_second=self.requests_per_second,
+                bucket_size=self.requests_per_second * 2,  # Allow small bursts
+            )
+        self.health = MirrorHealth(rate_limiter=rate_limiter)
         super().__init__(*args, **kwargs)
 
     async def fetch_one_cheesegull_beatmap(
