@@ -173,11 +173,18 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
     availability and performance.
     """
     prev_mirror: AbstractBeatmapMirror | None = None
-    num_attempts = 0
 
     await OSZ_FILE_MIRROR_SELECTOR.update_all_mirror_and_selector_weights()
 
-    while True:
+    # Retry up to 2x the number of mirrors, with extra iterations for skipped attempts
+    max_attempts = OSZ_FILE_MIRROR_SELECTOR.get_num_mirrors() * 2
+    max_iterations = max_attempts * 2  # Allow for skipped iterations due to prev_mirror
+    actual_attempts = 0
+
+    for _ in range(max_iterations):
+        if actual_attempts >= max_attempts:
+            break
+
         mirror = OSZ_FILE_MIRROR_SELECTOR.select_mirror()
         if mirror is prev_mirror:
             # don't allow the same mirror to be run twice, to help
@@ -185,15 +192,7 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
             # because of an error on a single beatmapset
             continue
 
-        # Only retry up to 2x the number of mirrors
-        if num_attempts > OSZ_FILE_MIRROR_SELECTOR.get_num_mirrors() * 2:
-            logging.warning(
-                "Failed to fetch beatmapset osz from any mirror",
-                extra={"beatmapset_id": beatmapset_id},
-            )
-            return None
-
-        num_attempts += 1
+        actual_attempts += 1
 
         started_at = datetime.now()
         mirror_response = await mirror.fetch_beatmap_zip_data(beatmapset_id)
@@ -221,7 +220,21 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
         await OSZ_FILE_MIRROR_SELECTOR.update_all_mirror_and_selector_weights()
 
         if mirror_response.is_success:
-            break
+            ms_elapsed = (ended_at.timestamp() - started_at.timestamp()) * 1000
+
+            logging.debug(
+                "Served beatmapset osz from mirror",
+                extra={
+                    "mirror_name": mirror.name,
+                    "mirror_weight": mirror.weight,
+                    "beatmapset_id": beatmapset_id,
+                    "ms_elapsed": ms_elapsed,
+                    "data_size": (
+                        len(mirror_response.data) if mirror_response.data else 0
+                    ),
+                },
+            )
+            return mirror_response.data
 
         logging.warning(
             "Failed to fetch beatmapset osz from mirror",
@@ -237,21 +250,12 @@ async def fetch_beatmap_zip_data(beatmapset_id: int) -> bytes | None:
             },
         )
         prev_mirror = mirror
-        continue
 
-    ms_elapsed = (ended_at.timestamp() - started_at.timestamp()) * 1000
-
-    logging.debug(
-        "Served beatmapset osz from mirror",
-        extra={
-            "mirror_name": mirror.name,
-            "mirror_weight": mirror.weight,
-            "beatmapset_id": beatmapset_id,
-            "ms_elapsed": ms_elapsed,
-            "data_size": len(mirror_response.data) if mirror_response.data else 0,
-        },
+    logging.warning(
+        "Failed to fetch beatmapset osz from any mirror",
+        extra={"beatmapset_id": beatmapset_id},
     )
-    return mirror_response.data
+    return None
 
 
 async def fetch_beatmap_background_image(beatmap_id: int) -> bytes | None:
@@ -261,11 +265,18 @@ async def fetch_beatmap_background_image(beatmap_id: int) -> bytes | None:
     availability and performance.
     """
     prev_mirror: AbstractBeatmapMirror | None = None
-    num_attempts = 0
 
     await BACKGROUND_IMAGE_MIRROR_SELECTOR.update_all_mirror_and_selector_weights()
 
-    while True:
+    # Retry up to 2x the number of mirrors, with extra iterations for skipped attempts
+    max_attempts = BACKGROUND_IMAGE_MIRROR_SELECTOR.get_num_mirrors() * 2
+    max_iterations = max_attempts * 2  # Allow for skipped iterations due to prev_mirror
+    actual_attempts = 0
+
+    for _ in range(max_iterations):
+        if actual_attempts >= max_attempts:
+            break
+
         mirror = BACKGROUND_IMAGE_MIRROR_SELECTOR.select_mirror()
         if mirror is prev_mirror:
             # don't allow the same mirror to be run twice, to help
@@ -273,15 +284,7 @@ async def fetch_beatmap_background_image(beatmap_id: int) -> bytes | None:
             # because of an error on a single beatmapset
             continue
 
-        # Only retry up to 2x the number of mirrors
-        if num_attempts > BACKGROUND_IMAGE_MIRROR_SELECTOR.get_num_mirrors() * 2:
-            logging.warning(
-                "Failed to fetch beatmap background image from any mirror",
-                extra={"beatmap_id": beatmap_id},
-            )
-            return None
-
-        num_attempts += 1
+        actual_attempts += 1
 
         started_at = datetime.now()
         mirror_response = await mirror.fetch_beatmap_background_image(beatmap_id)
@@ -302,7 +305,21 @@ async def fetch_beatmap_background_image(beatmap_id: int) -> bytes | None:
         await BACKGROUND_IMAGE_MIRROR_SELECTOR.update_all_mirror_and_selector_weights()
 
         if mirror_response.is_success:
-            break
+            ms_elapsed = (ended_at.timestamp() - started_at.timestamp()) * 1000
+
+            logging.debug(
+                "Served beatmap background image from mirror",
+                extra={
+                    "mirror_name": mirror.name,
+                    "mirror_weight": mirror.weight,
+                    "beatmap_id": beatmap_id,
+                    "ms_elapsed": ms_elapsed,
+                    "data_size": (
+                        len(mirror_response.data) if mirror_response.data else 0
+                    ),
+                },
+            )
+            return mirror_response.data
 
         logging.warning(
             "Failed to fetch beatmap background image from mirror",
@@ -318,18 +335,9 @@ async def fetch_beatmap_background_image(beatmap_id: int) -> bytes | None:
             },
         )
         prev_mirror = mirror
-        continue
 
-    ms_elapsed = (ended_at.timestamp() - started_at.timestamp()) * 1000
-
-    logging.debug(
-        "Served beatmap background image from mirror",
-        extra={
-            "mirror_name": mirror.name,
-            "mirror_weight": mirror.weight,
-            "beatmap_id": beatmap_id,
-            "ms_elapsed": ms_elapsed,
-            "data_size": len(mirror_response.data) if mirror_response.data else 0,
-        },
+    logging.warning(
+        "Failed to fetch beatmap background image from any mirror",
+        extra={"beatmap_id": beatmap_id},
     )
-    return mirror_response.data
+    return None
