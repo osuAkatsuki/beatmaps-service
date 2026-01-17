@@ -137,6 +137,43 @@ async def fetch_one_by_id(beatmap_id: int, /) -> AkatsukiBeatmap | None:
     )
 
 
+async def fetch_many_maps_with_custom_akatsuki_status() -> list[AkatsukiBeatmap]:
+    query = """\
+        SELECT * FROM beatmaps WHERE ranked_status_freezed = 1 ORDER BY lastest_updated
+    """
+    rec = await state.database.fetch_all(query)
+    akatsuki_maps_with_custom_status: list[AkatsukiBeatmap] = []
+    for akatsuki_beatmap in rec:
+        beatmap = AkatsukiBeatmap(
+            beatmap_id=akatsuki_beatmap["beatmap_id"],
+            beatmapset_id=akatsuki_beatmap["beatmapset_id"],
+            beatmap_md5=akatsuki_beatmap["beatmap_md5"],
+            song_name=akatsuki_beatmap["song_name"],
+            file_name=akatsuki_beatmap["file_name"],
+            ar=akatsuki_beatmap["ar"],
+            od=akatsuki_beatmap["od"],
+            mode=akatsuki_beatmap["mode"],
+            max_combo=akatsuki_beatmap["max_combo"],
+            hit_length=akatsuki_beatmap["hit_length"],
+            bpm=akatsuki_beatmap["bpm"],
+            ranked=akatsuki_beatmap["ranked"],
+            latest_update=akatsuki_beatmap["latest_update"],
+            ranked_status_freezed=akatsuki_beatmap["ranked_status_freezed"],
+            playcount=akatsuki_beatmap["playcount"],
+            passcount=akatsuki_beatmap["passcount"],
+            rankedby=akatsuki_beatmap["rankedby"],
+            rating=akatsuki_beatmap["rating"],
+            bancho_ranked_status=akatsuki_beatmap["bancho_ranked_status"],
+            count_circles=akatsuki_beatmap["count_circles"],
+            count_spinners=akatsuki_beatmap["count_spinners"],
+            count_sliders=akatsuki_beatmap["count_sliders"],
+            bancho_creator_id=akatsuki_beatmap["bancho_creator_id"],
+            bancho_creator_name=akatsuki_beatmap["bancho_creator_name"],
+        )
+        akatsuki_maps_with_custom_status.append(beatmap)
+    return akatsuki_maps_with_custom_status
+
+
 async def create_or_replace(beatmap: AkatsukiBeatmap) -> AkatsukiBeatmap:
     query = """\
         REPLACE INTO beatmaps (
