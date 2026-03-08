@@ -1,6 +1,6 @@
-import httpx
 from typing_extensions import override
 
+from app.adapters.osu_mirrors.backends import MAX_RESPONSE_BYTES
 from app.adapters.osu_mirrors.backends import AbstractBeatmapMirror
 from app.adapters.osu_mirrors.backends import BeatmapMirrorResponse
 from app.common_models import CheesegullBeatmap
@@ -18,129 +18,38 @@ class OsuDirectMirror(AbstractBeatmapMirror):
         self,
         beatmap_id: int,
     ) -> BeatmapMirrorResponse[CheesegullBeatmap | None]:
-        response: httpx.Response | None = None
-        try:
-            response = await self.http_client.get(
-                f"{self.base_url}/api/b/{beatmap_id}",
-            )
-            if response.status_code in (404, 451):
-                return BeatmapMirrorResponse(
-                    data=None,
-                    is_success=True,
-                    request_url=str(response.request.url),
-                    status_code=response.status_code,
-                )
-            response.raise_for_status()
-            return BeatmapMirrorResponse(
-                data=CheesegullBeatmap.model_validate(response.json()),
-                is_success=True,
-                request_url=str(response.request.url),
-                status_code=response.status_code,
-            )
-        except Exception as exc:
-            return BeatmapMirrorResponse(
-                data=None,
-                is_success=False,
-                request_url=str(response.request.url) if response else None,
-                status_code=response.status_code if response else None,
-                error_message=str(exc),
-            )
+        return await self._fetch(
+            f"{self.base_url}/api/b/{beatmap_id}",
+            lambda r: CheesegullBeatmap.model_validate(r.json()),
+        )
 
     @override
     async def fetch_one_cheesegull_beatmapset(
         self,
         beatmapset_id: int,
     ) -> BeatmapMirrorResponse[CheesegullBeatmapset | None]:
-        response: httpx.Response | None = None
-        try:
-            response = await self.http_client.get(
-                f"{self.base_url}/api/s/{beatmapset_id}",
-            )
-            if response.status_code in (404, 451):
-                return BeatmapMirrorResponse(
-                    data=None,
-                    is_success=True,
-                    request_url=str(response.request.url),
-                    status_code=response.status_code,
-                )
-            response.raise_for_status()
-            return BeatmapMirrorResponse(
-                data=CheesegullBeatmapset.model_validate(response.json()),
-                is_success=True,
-                request_url=str(response.request.url),
-                status_code=response.status_code,
-            )
-        except Exception as exc:
-            return BeatmapMirrorResponse(
-                data=None,
-                is_success=False,
-                request_url=str(response.request.url) if response else None,
-                status_code=response.status_code if response else None,
-                error_message=str(exc),
-            )
+        return await self._fetch(
+            f"{self.base_url}/api/s/{beatmapset_id}",
+            lambda r: CheesegullBeatmapset.model_validate(r.json()),
+        )
 
     @override
     async def fetch_beatmap_zip_data(
         self,
         beatmapset_id: int,
     ) -> BeatmapMirrorResponse[bytes | None]:
-        response: httpx.Response | None = None
-        try:
-            response = await self.http_client.get(
-                f"{self.base_url}/api/d/{beatmapset_id}",
-            )
-            if response.status_code in (404, 451):
-                return BeatmapMirrorResponse(
-                    data=None,
-                    is_success=True,
-                    request_url=str(response.request.url),
-                    status_code=response.status_code,
-                )
-            response.raise_for_status()
-            return BeatmapMirrorResponse(
-                data=response.read(),
-                is_success=True,
-                request_url=str(response.request.url),
-                status_code=response.status_code,
-            )
-        except Exception as exc:
-            return BeatmapMirrorResponse(
-                data=None,
-                is_success=False,
-                request_url=str(response.request.url) if response else None,
-                status_code=response.status_code if response else None,
-                error_message=str(exc),
-            )
+        return await self._fetch(
+            f"{self.base_url}/api/d/{beatmapset_id}",
+            lambda r: r.read(),
+            max_response_bytes=MAX_RESPONSE_BYTES,
+        )
 
     @override
     async def fetch_beatmap_background_image(
         self,
         beatmap_id: int,
     ) -> BeatmapMirrorResponse[bytes | None]:
-        response: httpx.Response | None = None
-        try:
-            response = await self.http_client.get(
-                f"{self.base_url}/api/media/background/{beatmap_id}",
-            )
-            if response.status_code in (404, 451):
-                return BeatmapMirrorResponse(
-                    data=None,
-                    is_success=True,
-                    request_url=str(response.request.url),
-                    status_code=response.status_code,
-                )
-            response.raise_for_status()
-            return BeatmapMirrorResponse(
-                data=response.read(),
-                is_success=True,
-                request_url=str(response.request.url),
-                status_code=response.status_code,
-            )
-        except Exception as exc:
-            return BeatmapMirrorResponse(
-                data=None,
-                is_success=False,
-                request_url=str(response.request.url) if response else None,
-                status_code=response.status_code if response else None,
-                error_message=str(exc),
-            )
+        return await self._fetch(
+            f"{self.base_url}/api/media/background/{beatmap_id}",
+            lambda r: r.read(),
+        )

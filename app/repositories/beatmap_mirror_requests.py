@@ -1,14 +1,9 @@
-import math
 from datetime import datetime
 from enum import StrEnum
 
 from pydantic import BaseModel
 
 from app import state
-
-# Give new mirrors a fair shot
-# to get their foot in the race
-MIRROR_INITIAL_WEIGHT = 100
 
 
 class MirrorResource(StrEnum):
@@ -28,55 +23,6 @@ class BeatmapMirrorRequest(BaseModel):
     response_size: int
     response_error: str | None
     resource: MirrorResource
-
-
-class BeatmapMirrorScore(BaseModel):
-    mirror_name: str
-    score: float
-
-
-async def get_mirror_weight(mirror_name: str, resource: MirrorResource) -> int:
-    """Give the mirror a weighting based on its latency and failure rate."""
-    p75_success_ms_latency = await state.database.fetch_val(
-        """\
-        WITH request_latencies AS (
-            SELECT (ended_at - started_at) * 1000 AS ms_elapsed,
-            PERCENT_RANK() OVER (ORDER BY ended_at - started_at) p
-            FROM beatmap_mirror_requests
-            WHERE started_at > NOW() - INTERVAL 4 HOUR
-            AND mirror_name = :mirror_name
-            AND resource = :resource
-            AND success = 1
-        )
-        SELECT DISTINCT first_value(ms_elapsed) OVER (
-            ORDER BY CASE WHEN p <= 0.75 THEN p END DESC
-        ) p75_success_ms_latency
-        FROM request_latencies
-        """,
-        {"mirror_name": mirror_name, "resource": resource.value},
-    )
-    if p75_success_ms_latency is None:
-        return MIRROR_INITIAL_WEIGHT
-
-    failure_rate = await state.database.fetch_val(
-        """\
-        SELECT AVG(success = 0)
-        FROM beatmap_mirror_requests
-        WHERE started_at > NOW() - INTERVAL 4 HOUR
-        AND mirror_name = :mirror_name
-        AND resource = :resource
-        """,
-        {"mirror_name": mirror_name, "resource": resource.value},
-    )
-    if failure_rate is None:
-        return MIRROR_INITIAL_WEIGHT
-
-    # https://www.desmos.com/calculator/wxpsjhdby9
-    latency_weight = 1000 * math.exp(-1 / 1000 * float(p75_success_ms_latency))
-    failure_weight = math.exp(-30 * failure_rate)
-    # TODO: integrate `mirror_cache_age` into the weight calculation
-    weight = max(1, int(latency_weight * failure_weight))
-    return weight
 
 
 async def create(
