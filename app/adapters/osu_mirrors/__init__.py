@@ -75,15 +75,15 @@ def get_available_mirrors(
     - Circuit breaker state (not open)
     - Rate limiter (has capacity)
 
-    Returns mirrors sorted by latency EMA (fastest first).
+    Returns mirrors sorted by composite score (latency weighted by reliability).
     """
     available = [
         mirror
         for mirror in BEATMAP_MIRRORS
         if resource in mirror.supported_resources and mirror.health.is_available()
     ]
-    # Sort by latency (fastest first)
-    available.sort(key=lambda m: m.health.latency_ema)
+    # Sort by composite score (latency weighted by reliability, lower is better)
+    available.sort(key=lambda m: m.health.score())
     return available
 
 
@@ -242,9 +242,11 @@ async def fetch_with_fallback(
         )
         return response.data
 
-    # Hedged request failed, try remaining mirrors sequentially
+    # Hedged request failed, try remaining mirrors sequentially.
+    # Use wait_for_availability() so we briefly wait for rate limiter
+    # tokens instead of skipping healthy-but-throttled mirrors.
     for mirror in available[HEDGE_COUNT:]:
-        if not mirror.health.is_available():
+        if not await mirror.health.wait_for_availability():
             continue
 
         started_at = time.time()

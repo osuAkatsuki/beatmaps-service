@@ -1,9 +1,7 @@
-import logging
-
-import httpx
 from typing_extensions import override
 
 from app import settings
+from app.adapters.osu_mirrors.backends import MAX_RESPONSE_BYTES
 from app.adapters.osu_mirrors.backends import AbstractBeatmapMirror
 from app.adapters.osu_mirrors.backends import BeatmapMirrorResponse
 from app.repositories.beatmap_mirror_requests import MirrorResource
@@ -15,75 +13,29 @@ class MinoMirror(AbstractBeatmapMirror):
     supported_resources = {MirrorResource.OSZ_FILE, MirrorResource.BACKGROUND_IMAGE}
 
     @override
+    def _extra_headers(self) -> dict[str, str]:
+        return {"x-ratelimit-key": settings.MINO_INCREASED_RATELIMIT_KEY}
+
+    @override
     async def fetch_beatmap_zip_data(
         self,
         beatmapset_id: int,
     ) -> BeatmapMirrorResponse[bytes | None]:
-        response: httpx.Response | None = None
-        try:
-            response = await self.http_client.get(
-                f"{self.base_url}/d/{beatmapset_id}",
-                headers={"x-ratelimit-key": settings.MINO_INCREASED_RATELIMIT_KEY},
-            )
-            if response.status_code in (404, 451):
-                return BeatmapMirrorResponse(
-                    data=None,
-                    is_success=True,
-                    request_url=str(response.request.url),
-                    status_code=response.status_code,
-                )
-            response.raise_for_status()
-            return BeatmapMirrorResponse(
-                data=response.read(),
-                is_success=True,
-                request_url=str(response.request.url),
-                status_code=response.status_code,
-            )
-        except Exception as exc:
-            return BeatmapMirrorResponse(
-                data=None,
-                is_success=False,
-                request_url=str(response.request.url) if response else None,
-                status_code=response.status_code if response else None,
-                error_message=str(exc),
-            )
+        return await self._fetch(
+            f"{self.base_url}/d/{beatmapset_id}",
+            lambda r: r.read(),
+            max_response_bytes=MAX_RESPONSE_BYTES,
+        )
 
     @override
     async def fetch_beatmap_background_image(
         self,
         beatmap_id: int,
     ) -> BeatmapMirrorResponse[bytes | None]:
-        response: httpx.Response | None = None
-        try:
-            response = await self.http_client.get(
-                f"{self.base_url}/preview/background/{beatmap_id}",
-            )
-            if response.status_code in (404, 451):
-                return BeatmapMirrorResponse(
-                    data=None,
-                    is_success=True,
-                    request_url=str(response.request.url),
-                    status_code=response.status_code,
-                )
-            response.raise_for_status()
-            return BeatmapMirrorResponse(
-                data=response.read(),
-                is_success=True,
-                request_url=str(response.request.url),
-                status_code=response.status_code,
-            )
-        except Exception as exc:
-            logging.warning(
-                "Failed to fetch beatmap background from catboy.best",
-                exc_info=True,
-            )
-            return BeatmapMirrorResponse(
-                data=None,
-                is_success=False,
-                request_url=str(response.request.url) if response else None,
-                status_code=response.status_code if response else None,
-                error_message=str(exc),
-            )
+        return await self._fetch(
+            f"{self.base_url}/preview/background/{beatmap_id}",
+            lambda r: r.read(),
+        )
 
 
 class MinoCentralMirror(MinoMirror):
