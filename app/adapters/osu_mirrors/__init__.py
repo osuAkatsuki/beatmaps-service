@@ -8,9 +8,7 @@ from typing import TypeVar
 
 from app.adapters.osu_mirrors.backends import AbstractBeatmapMirror
 from app.adapters.osu_mirrors.backends import BeatmapMirrorResponse
-from app.adapters.osu_mirrors.backends.mino import MinoCentralMirror
-from app.adapters.osu_mirrors.backends.mino import MinoSingaporeMirror
-from app.adapters.osu_mirrors.backends.mino import MinoUSMirror
+from app.adapters.osu_mirrors.backends.mino import MinoMirror
 from app.adapters.osu_mirrors.backends.nerinyan import NerinyanMirror
 from app.adapters.osu_mirrors.backends.osu_direct import OsuDirectMirror
 from app.common_models import CheesegullBeatmap
@@ -39,10 +37,8 @@ def truncate_string(s: str | None) -> str | None:
 
 
 BEATMAP_MIRRORS: list[AbstractBeatmapMirror] = [
-    OsuDirectMirror(),
-    MinoCentralMirror(),
-    MinoUSMirror(),
-    MinoSingaporeMirror(),
+    # OsuDirectMirror(),
+    MinoMirror(),
     NerinyanMirror(),
     # GatariMirror(),  # Disabled as ratelimit is very low
     # RippleMirror(),  # Disabled as only ranked maps are supported
