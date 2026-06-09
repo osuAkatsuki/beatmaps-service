@@ -4,6 +4,7 @@ import time
 from app.adapters import aws_s3
 from app.adapters import discord_webhooks
 from app.adapters import osu_api_v1
+from app.adapters.osu_api_backoff import OsuApiBackoffError
 from app.common_models import RankedStatus
 from app.repositories import akatsuki_beatmaps
 from app.repositories.akatsuki_beatmaps import AkatsukiBeatmap
@@ -86,6 +87,8 @@ async def _update_from_osu_api(old_beatmap: AkatsukiBeatmap) -> AkatsukiBeatmap 
             await akatsuki_beatmaps.delete_by_md5(old_beatmap.beatmap_md5)
             await aws_s3.delete_object(f"/beatmaps/{old_beatmap.beatmap_id}.osu")
             return None
+    except OsuApiBackoffError:
+        return old_beatmap
     except Exception:
         # TODO: fallback to beatmap mirror
         raise
@@ -150,7 +153,13 @@ async def _update_from_osu_api(old_beatmap: AkatsukiBeatmap) -> AkatsukiBeatmap 
 async def fetch_one_by_id(beatmap_id: int) -> AkatsukiBeatmap | None:
     beatmap = await akatsuki_beatmaps.fetch_one_by_id(beatmap_id)
     if beatmap is None:
-        osu_api_v1_beatmap = await osu_api_v1.fetch_one_beatmap(beatmap_id=beatmap_id)
+        try:
+            osu_api_v1_beatmap = await osu_api_v1.fetch_one_beatmap(
+                beatmap_id=beatmap_id,
+            )
+        except OsuApiBackoffError:
+            return None
+
         if osu_api_v1_beatmap is None:
             return None
 
@@ -180,7 +189,13 @@ async def fetch_one_by_id(beatmap_id: int) -> AkatsukiBeatmap | None:
 async def fetch_one_by_md5(beatmap_md5: str) -> AkatsukiBeatmap | None:
     beatmap = await akatsuki_beatmaps.fetch_one_by_md5(beatmap_md5)
     if beatmap is None:
-        osu_api_v1_beatmap = await osu_api_v1.fetch_one_beatmap(beatmap_md5=beatmap_md5)
+        try:
+            osu_api_v1_beatmap = await osu_api_v1.fetch_one_beatmap(
+                beatmap_md5=beatmap_md5,
+            )
+        except OsuApiBackoffError:
+            return None
+
         if osu_api_v1_beatmap is None:
             return None
 

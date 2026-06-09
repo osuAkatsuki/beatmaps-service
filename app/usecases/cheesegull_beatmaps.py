@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 
 from app.adapters import osu_mirrors
+from app.adapters.osu_api_backoff import OsuApiBackoffError
 from app.adapters.osu_api_v2 import api as osu_api_v2
 from app.adapters.osu_api_v2.models import BeatmapExtended
 from app.adapters.osu_api_v2.models import BeatmapsetExtended
@@ -224,6 +225,8 @@ async def cheesegull_search(
             },
         )
         return cheesegull_beatmapsets
+    except OsuApiBackoffError:
+        return None
     except Exception:
         logging.exception(
             "Failed to fetch cheesegull search",

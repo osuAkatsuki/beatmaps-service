@@ -7,6 +7,8 @@ from typing import Any
 import httpx
 from pydantic import BaseModel
 
+from app.adapters.osu_api_backoff import OsuApiBackoff
+
 
 class OAuthClientCredentials(BaseModel):
     client_id: str
@@ -20,11 +22,13 @@ class AsyncOAuth(httpx.Auth):
         self,
         client_credential_sets: list[OAuthClientCredentials],
         token_endpoint: str,
+        backoff: OsuApiBackoff | None = None,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         self.client_credential_sets = client_credential_sets
         self.token_endpoint = token_endpoint
+        self.backoff = backoff
 
         super().__init__(*args, **kwargs)
 
@@ -63,6 +67,12 @@ class AsyncOAuth(httpx.Auth):
         if client_credentials.access_token is None:
             refresh_response = yield self.build_refresh_request(client_credentials)
             await refresh_response.aread()
+            if self.backoff is not None:
+                self.backoff.apply_if_rate_limited(
+                    refresh_response,
+                    upstream="osu! API v2",
+                    endpoint="oauth/token",
+                )
             refresh_response_data = refresh_response.json()
             if "access_token" not in refresh_response_data:
                 logging.warning(
@@ -82,6 +92,12 @@ class AsyncOAuth(httpx.Auth):
         while response.status_code == 401:
             refresh_response = yield self.build_refresh_request(client_credentials)
             await refresh_response.aread()
+            if self.backoff is not None:
+                self.backoff.apply_if_rate_limited(
+                    refresh_response,
+                    upstream="osu! API v2",
+                    endpoint="oauth/token",
+                )
             refresh_response_data = refresh_response.json()
             if "access_token" not in refresh_response_data:
                 logging.warning(

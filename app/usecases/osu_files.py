@@ -3,6 +3,7 @@ import logging
 
 from app.adapters import aws_s3
 from app.adapters import osu_api_v1
+from app.adapters.osu_api_backoff import OsuApiBackoffError
 from app.repositories import akatsuki_beatmaps
 
 
@@ -36,7 +37,21 @@ async def fetch_beatmap_osu_file_data(beatmap_id: int) -> bytes | None:
             extra={"beatmap_id": beatmap_id},
         )
 
-    beatmap_osu_file_data = await osu_api_v1.fetch_beatmap_osu_file_data(beatmap_id)
+    try:
+        fresh_beatmap_osu_file_data = await osu_api_v1.fetch_beatmap_osu_file_data(
+            beatmap_id,
+        )
+    except OsuApiBackoffError:
+        if beatmap_osu_file_data is not None:
+            logging.warning(
+                "Serving stale beatmap s3 osu file cache during osu! API backoff",
+                extra={"beatmap_id": beatmap_id},
+            )
+            return beatmap_osu_file_data
+
+        return None
+
+    beatmap_osu_file_data = fresh_beatmap_osu_file_data
     if beatmap_osu_file_data is None:
         return None
 
