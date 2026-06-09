@@ -51,7 +51,7 @@ class OsuApiBackoffTestCase(unittest.TestCase):
                 with self.assertRaises(OsuApiBackoffError):
                     backoff.raise_if_unavailable(upstream="osu! API v2")
 
-            mock_time.monotonic.return_value = started_at + 3601
+            mock_time.monotonic.return_value = started_at + 61
             self.assertEqual(backoff.state, CircuitState.HALF_OPEN)
 
     def test_only_one_canary_is_allowed_in_half_open(self) -> None:
@@ -67,7 +67,7 @@ class OsuApiBackoffTestCase(unittest.TestCase):
                     endpoint="get_beatmaps",
                 )
 
-            mock_time.monotonic.return_value = started_at + 3601
+            mock_time.monotonic.return_value = started_at + 61
             backoff.raise_if_unavailable(upstream="osu! API v1")
             with self.assertRaises(OsuApiBackoffError):
                 backoff.raise_if_unavailable(upstream="osu! API v1")
@@ -85,7 +85,7 @@ class OsuApiBackoffTestCase(unittest.TestCase):
                     endpoint="get_beatmaps",
                 )
 
-            mock_time.monotonic.return_value = started_at + 3601
+            mock_time.monotonic.return_value = started_at + 61
             backoff.raise_if_unavailable(upstream="osu! API v1")
             backoff.record_success(upstream="osu! API v1", endpoint="get_beatmaps")
 
@@ -105,7 +105,7 @@ class OsuApiBackoffTestCase(unittest.TestCase):
                     endpoint="get_beatmaps",
                 )
 
-            mock_time.monotonic.return_value = started_at + 3601
+            mock_time.monotonic.return_value = started_at + 61
             backoff.raise_if_unavailable(upstream="osu! API v1")
             backoff.record_failure(upstream="osu! API v1", endpoint="get_beatmaps")
 
