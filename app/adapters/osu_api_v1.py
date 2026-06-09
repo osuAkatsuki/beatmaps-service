@@ -9,13 +9,14 @@ from pydantic import BaseModel
 from app import settings
 from app.adapters.osu_api_backoff import OsuApiBackoff
 from app.adapters.osu_api_backoff import OsuApiBackoffError
+from app.adapters.osu_api_backoff import osu_api_rate_limiter
 from app.common_models import GameMode
 
 osu_api_v1_http_client = httpx.AsyncClient(
     base_url="https://old.ppy.sh/",
     timeout=httpx.Timeout(15),
 )
-osu_api_v1_backoff = OsuApiBackoff()
+osu_api_v1_backoff = OsuApiBackoff(rate_limiter=osu_api_rate_limiter)
 
 
 class Beatmap(BaseModel):

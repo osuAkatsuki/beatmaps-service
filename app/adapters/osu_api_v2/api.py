@@ -7,6 +7,7 @@ from app import oauth
 from app import settings
 from app.adapters.osu_api_backoff import OsuApiBackoff
 from app.adapters.osu_api_backoff import OsuApiBackoffError
+from app.adapters.osu_api_backoff import osu_api_rate_limiter
 from app.adapters.osu_api_v2.models import BeatmapExtended
 from app.adapters.osu_api_v2.models import BeatmapsetExtended
 from app.adapters.osu_api_v2.models import BeatmapsetSearchResponse
@@ -21,7 +22,7 @@ from app.common_models import GameMode
 OSU_API_V2_TOKEN_ENDPOINT = "https://osu.ppy.sh/oauth/token"
 
 
-osu_api_v2_backoff = OsuApiBackoff()
+osu_api_v2_backoff = OsuApiBackoff(rate_limiter=osu_api_rate_limiter)
 
 osu_api_v2_http_client = httpx.AsyncClient(
     base_url="https://osu.ppy.sh/api/v2/",

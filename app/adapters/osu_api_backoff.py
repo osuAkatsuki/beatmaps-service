@@ -9,8 +9,10 @@ from email.utils import parsedate_to_datetime
 import httpx
 
 RATE_LIMIT_STATUS_CODES = {403, 429}
-DEFAULT_FAILURE_COOLDOWN_SECONDS = 60
+DEFAULT_FAILURE_COOLDOWN_SECONDS = 10
 DEFAULT_RATE_LIMIT_COOLDOWN_SECONDS = 60
+DEFAULT_OSU_API_REQUESTS_PER_MINUTE = 45
+DEFAULT_OSU_API_BURST_SIZE = 5
 
 logger = logging.getLogger(__name__)
 
@@ -25,15 +27,54 @@ class OsuApiBackoffError(RuntimeError):
     pass
 
 
+class OsuApiRateLimiter:
+    def __init__(
+        self,
+        *,
+        requests_per_minute: float = DEFAULT_OSU_API_REQUESTS_PER_MINUTE,
+        burst_size: float = DEFAULT_OSU_API_BURST_SIZE,
+    ) -> None:
+        if requests_per_minute <= 0:
+            raise ValueError("requests_per_minute must be positive")
+        if burst_size <= 0:
+            raise ValueError("burst_size must be positive")
+
+        self._tokens_per_second = requests_per_minute / 60
+        self._bucket_size = burst_size
+        self._tokens = burst_size
+        self._last_refill_at = time.monotonic()
+        self._lock = threading.Lock()
+
+    def acquire(self) -> float:
+        with self._lock:
+            self._refill()
+            if self._tokens >= 1:
+                self._tokens -= 1
+                return 0
+
+            return (1 - self._tokens) / self._tokens_per_second
+
+    def _refill(self) -> None:
+        now = time.monotonic()
+        elapsed = now - self._last_refill_at
+        self._tokens = min(
+            self._bucket_size,
+            self._tokens + elapsed * self._tokens_per_second,
+        )
+        self._last_refill_at = now
+
+
 class OsuApiBackoff:
     def __init__(
         self,
         *,
         failure_threshold: int = 3,
         failure_cooldown_seconds: float = DEFAULT_FAILURE_COOLDOWN_SECONDS,
+        rate_limiter: OsuApiRateLimiter | None = None,
     ) -> None:
         self._failure_threshold = failure_threshold
         self._failure_cooldown_seconds = failure_cooldown_seconds
+        self._rate_limiter = rate_limiter
 
         self._state = CircuitState.CLOSED
         self._consecutive_failures = 0
@@ -51,24 +92,36 @@ class OsuApiBackoff:
         with self._lock:
             state = self._evaluate_state()
             if state == CircuitState.CLOSED:
-                return
+                allow_canary = False
 
-            if state == CircuitState.HALF_OPEN and not self._probe_in_flight:
+            elif state == CircuitState.HALF_OPEN and not self._probe_in_flight:
                 self._probe_in_flight = True
-                logger.info(
-                    "Allowing osu! API canary request",
-                    extra={"upstream": upstream, "circuit_state": state},
-                )
-                return
+                allow_canary = True
 
-            seconds_remaining = 0
-            if self._state == CircuitState.OPEN:
-                seconds_remaining = max(
-                    0,
-                    int(self._cooldown_seconds - self._elapsed_since_opened()),
+            else:
+                seconds_remaining = 0
+                if self._state == CircuitState.OPEN:
+                    seconds_remaining = max(
+                        0,
+                        int(self._cooldown_seconds - self._elapsed_since_opened()),
+                    )
+                raise OsuApiBackoffError(
+                    f"{upstream} is backing off for {seconds_remaining}s",
                 )
-            raise OsuApiBackoffError(
-                f"{upstream} is backing off for {seconds_remaining}s",
+
+        try:
+            self._raise_if_rate_limited(upstream=upstream)
+        except OsuApiBackoffError:
+            if allow_canary:
+                with self._lock:
+                    if self._state == CircuitState.HALF_OPEN:
+                        self._probe_in_flight = False
+            raise
+
+        if allow_canary:
+            logger.info(
+                "Allowing osu! API canary request",
+                extra={"upstream": upstream, "circuit_state": CircuitState.HALF_OPEN},
             )
 
     def record_success(self, *, upstream: str, endpoint: str) -> None:
@@ -171,6 +224,26 @@ class OsuApiBackoff:
     def _elapsed_since_opened(self) -> float:
         return time.monotonic() - self._opened_at
 
+    def _raise_if_rate_limited(self, *, upstream: str) -> None:
+        if self._rate_limiter is None:
+            return
+
+        seconds_until_available = self._rate_limiter.acquire()
+        if seconds_until_available == 0:
+            return
+
+        logger.info(
+            "Skipped osu! API request because local rate limit is exhausted",
+            extra={
+                "upstream": upstream,
+                "seconds_until_available": seconds_until_available,
+            },
+        )
+        raise OsuApiBackoffError(
+            f"{upstream} local rate limit exhausted; retry in "
+            f"{seconds_until_available:.1f}s",
+        )
+
 
 def _get_rate_limit_cooldown_seconds(response: httpx.Response) -> int:
     retry_after = response.headers.get("Retry-After")
@@ -196,3 +269,6 @@ def _parse_retry_after_datetime(retry_after: str) -> datetime | None:
     if retry_at.tzinfo is None:
         retry_at = retry_at.replace(tzinfo=timezone.utc)
     return retry_at
+
+
+osu_api_rate_limiter = OsuApiRateLimiter()

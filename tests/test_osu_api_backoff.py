@@ -8,6 +8,7 @@ from app.adapters import osu_api_backoff
 from app.adapters.osu_api_backoff import CircuitState
 from app.adapters.osu_api_backoff import OsuApiBackoff
 from app.adapters.osu_api_backoff import OsuApiBackoffError
+from app.adapters.osu_api_backoff import OsuApiRateLimiter
 
 
 class OsuApiBackoffTestCase(unittest.TestCase):
@@ -32,6 +33,51 @@ class OsuApiBackoffTestCase(unittest.TestCase):
         self.assertEqual(backoff.state, CircuitState.OPEN)
         with self.assertRaises(OsuApiBackoffError):
             backoff.raise_if_unavailable(upstream="osu! API v1")
+
+    def test_local_rate_limiter_caps_outbound_requests(self) -> None:
+        limiter = OsuApiRateLimiter(requests_per_minute=60, burst_size=1)
+        backoff = OsuApiBackoff(rate_limiter=limiter)
+        started_at = time.monotonic()
+
+        with patch("app.adapters.osu_api_backoff.time") as mock_time:
+            mock_time.monotonic.return_value = started_at
+            backoff.raise_if_unavailable(upstream="osu! API v1")
+
+            with self.assertRaises(OsuApiBackoffError) as exc:
+                backoff.raise_if_unavailable(upstream="osu! API v1")
+
+            self.assertIn("local rate limit exhausted", str(exc.exception))
+
+            mock_time.monotonic.return_value = started_at + 1
+            backoff.raise_if_unavailable(upstream="osu! API v1")
+
+    def test_shared_rate_limiter_is_used_across_backoffs(self) -> None:
+        limiter = OsuApiRateLimiter(requests_per_minute=60, burst_size=1)
+        v1_backoff = OsuApiBackoff(rate_limiter=limiter)
+        v2_backoff = OsuApiBackoff(rate_limiter=limiter)
+        started_at = time.monotonic()
+
+        with patch("app.adapters.osu_api_backoff.time") as mock_time:
+            mock_time.monotonic.return_value = started_at
+            v1_backoff.raise_if_unavailable(upstream="osu! API v1")
+
+            with self.assertRaises(OsuApiBackoffError):
+                v2_backoff.raise_if_unavailable(upstream="osu! API v2")
+
+    def test_generic_failures_use_short_cooldown(self) -> None:
+        backoff = OsuApiBackoff(failure_threshold=1)
+        started_at = time.monotonic()
+
+        with patch("app.adapters.osu_api_backoff.time") as mock_time:
+            mock_time.monotonic.return_value = started_at
+            backoff.record_failure(upstream="osu! API v1", endpoint="get_beatmaps")
+            self.assertEqual(backoff.state, CircuitState.OPEN)
+
+            mock_time.monotonic.return_value = started_at + 9
+            self.assertEqual(backoff.state, CircuitState.OPEN)
+
+            mock_time.monotonic.return_value = started_at + 10
+            self.assertEqual(backoff.state, CircuitState.HALF_OPEN)
 
     def test_skipped_calls_do_not_extend_cooldown(self) -> None:
         backoff = OsuApiBackoff()
