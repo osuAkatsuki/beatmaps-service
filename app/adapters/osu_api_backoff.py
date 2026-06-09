@@ -12,7 +12,7 @@ RATE_LIMIT_STATUS_CODES = {403, 429}
 DEFAULT_FAILURE_COOLDOWN_SECONDS = 10
 DEFAULT_RATE_LIMIT_COOLDOWN_SECONDS = 60
 DEFAULT_OSU_API_REQUESTS_PER_MINUTE = 600
-DEFAULT_OSU_API_BURST_SIZE = 60
+DEFAULT_OSU_API_BURST_SIZE = 10
 
 logger = logging.getLogger(__name__)
 
@@ -127,6 +127,9 @@ class OsuApiBackoff:
     def record_success(self, *, upstream: str, endpoint: str) -> None:
         with self._lock:
             previous_state = self._state
+            if previous_state == CircuitState.OPEN:
+                return
+
             self._state = CircuitState.CLOSED
             self._consecutive_failures = 0
             self._opened_at = 0.0
@@ -155,6 +158,10 @@ class OsuApiBackoff:
         cooldown_seconds = cooldown_seconds or self._failure_cooldown_seconds
 
         with self._lock:
+            previous_state = self._state
+            if previous_state == CircuitState.OPEN:
+                return
+
             self._consecutive_failures += 1
             should_open = (
                 force_open
@@ -164,7 +171,6 @@ class OsuApiBackoff:
             if not should_open:
                 return
 
-            previous_state = self._state
             self._state = CircuitState.OPEN
             self._opened_at = time.monotonic()
             self._cooldown_seconds = cooldown_seconds

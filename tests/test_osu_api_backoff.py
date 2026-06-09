@@ -100,6 +100,46 @@ class OsuApiBackoffTestCase(unittest.TestCase):
             mock_time.monotonic.return_value = started_at + 61
             self.assertEqual(backoff.state, CircuitState.HALF_OPEN)
 
+    def test_in_flight_success_does_not_close_open_circuit(self) -> None:
+        backoff = OsuApiBackoff()
+
+        with self.assertRaises(OsuApiBackoffError):
+            backoff.apply_if_rate_limited(
+                httpx.Response(429),
+                upstream="osu! API v2",
+                endpoint="beatmaps",
+            )
+
+        backoff.record_success(upstream="osu! API v2", endpoint="beatmaps")
+
+        self.assertEqual(backoff.state, CircuitState.OPEN)
+        with self.assertRaises(OsuApiBackoffError):
+            backoff.raise_if_unavailable(upstream="osu! API v2")
+
+    def test_duplicate_in_flight_failures_do_not_extend_cooldown(self) -> None:
+        backoff = OsuApiBackoff()
+        started_at = time.monotonic()
+
+        with patch("app.adapters.osu_api_backoff.time") as mock_time:
+            mock_time.monotonic.return_value = started_at
+            with self.assertRaises(OsuApiBackoffError):
+                backoff.apply_if_rate_limited(
+                    httpx.Response(429),
+                    upstream="osu! API v2",
+                    endpoint="beatmaps",
+                )
+
+            mock_time.monotonic.return_value = started_at + 30
+            with self.assertRaises(OsuApiBackoffError):
+                backoff.apply_if_rate_limited(
+                    httpx.Response(429),
+                    upstream="osu! API v2",
+                    endpoint="beatmaps",
+                )
+
+            mock_time.monotonic.return_value = started_at + 61
+            self.assertEqual(backoff.state, CircuitState.HALF_OPEN)
+
     def test_only_one_canary_is_allowed_in_half_open(self) -> None:
         backoff = OsuApiBackoff()
         started_at = time.monotonic()
