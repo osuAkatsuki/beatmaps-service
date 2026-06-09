@@ -11,7 +11,12 @@ from app.repositories.beatmap_mirror_requests import MirrorResource
 class OsuDirectMirror(AbstractBeatmapMirror):
     name = "osu_direct"
     base_url = "https://osu.direct"
-    supported_resources = {MirrorResource.OSZ_FILE, MirrorResource.BACKGROUND_IMAGE}
+    supported_resources = {
+        MirrorResource.OSZ_FILE,
+        MirrorResource.BACKGROUND_IMAGE,
+        MirrorResource.CHEESEGULL_BEATMAP,
+        MirrorResource.CHEESEGULL_BEATMAPSET,
+    }
 
     @override
     async def fetch_one_cheesegull_beatmap(
