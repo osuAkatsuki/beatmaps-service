@@ -14,6 +14,8 @@ MIRROR_INITIAL_WEIGHT = 100
 class MirrorResource(StrEnum):
     OSZ_FILE = "osz_file"
     BACKGROUND_IMAGE = "background_image"
+    CHEESEGULL_BEATMAP = "cheesegull_beatmap"
+    CHEESEGULL_BEATMAPSET = "cheesegull_beatmapset"
     # TODO: beatmap audio file
 
 

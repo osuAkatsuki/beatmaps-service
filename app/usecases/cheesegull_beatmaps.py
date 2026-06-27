@@ -2,11 +2,11 @@ import logging
 from datetime import datetime
 
 from app.adapters import osu_mirrors
+from app.adapters.osu_api_backoff import OsuApiBackoffError
 from app.adapters.osu_api_v2 import api as osu_api_v2
 from app.adapters.osu_api_v2.models import BeatmapExtended
 from app.adapters.osu_api_v2.models import BeatmapsetExtended
 from app.adapters.osu_api_v2.models import Category
-from app.api.responses import JSONResponse
 from app.common_models import CheesegullBeatmap
 from app.common_models import CheesegullBeatmapset
 from app.common_models import CheesegullRankedStatus
@@ -93,6 +93,8 @@ async def fetch_one_cheesegull_beatmap(
                     osu_api_beatmap,
                 )
             )
+        except OsuApiBackoffError:
+            return None
         except Exception:
             # Fallback to mirror
             cheesegull_beatmap = await osu_mirrors.fetch_one_cheesegull_beatmap(
@@ -138,6 +140,8 @@ async def fetch_one_cheesegull_beatmapset(
                     osu_api_beatmapset,
                 )
             )
+        except OsuApiBackoffError:
+            return None
         except Exception:
             # Fallback to mirror
             cheesegull_beatmapset = await osu_mirrors.fetch_one_cheesegull_beatmapset(
@@ -224,6 +228,8 @@ async def cheesegull_search(
             },
         )
         return cheesegull_beatmapsets
+    except OsuApiBackoffError:
+        return None
     except Exception:
         logging.exception(
             "Failed to fetch cheesegull search",

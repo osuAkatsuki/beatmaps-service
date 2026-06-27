@@ -306,7 +306,7 @@ async def fetch_with_fallback(
 async def fetch_one_cheesegull_beatmap(beatmap_id: int) -> CheesegullBeatmap | None:
     """Fetch a cheesegull beatmap from the fastest available mirror."""
     return await fetch_with_fallback(
-        resource=MirrorResource.OSZ_FILE,  # Using OSZ_FILE for compatibility
+        resource=MirrorResource.CHEESEGULL_BEATMAP,
         resource_id=beatmap_id,
         fetch_func=lambda m: m.fetch_one_cheesegull_beatmap(beatmap_id),
     )
@@ -317,7 +317,7 @@ async def fetch_one_cheesegull_beatmapset(
 ) -> CheesegullBeatmapset | None:
     """Fetch a cheesegull beatmapset from the fastest available mirror."""
     return await fetch_with_fallback(
-        resource=MirrorResource.OSZ_FILE,  # Using OSZ_FILE for compatibility
+        resource=MirrorResource.CHEESEGULL_BEATMAPSET,
         resource_id=beatmapset_id,
         fetch_func=lambda m: m.fetch_one_cheesegull_beatmapset(beatmapset_id),
     )

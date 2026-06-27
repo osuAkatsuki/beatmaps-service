@@ -3,11 +3,24 @@ import logging
 
 from app.adapters import aws_s3
 from app.adapters import osu_api_v1
+from app.adapters.osu_api_backoff import OsuApiBackoffError
 from app.repositories import akatsuki_beatmaps
 
 
 def hash_content(content: bytes) -> str:
     return hashlib.md5(content).hexdigest()
+
+
+def _is_valid_osu_file_data(beatmap_osu_file_data: bytes) -> bool:
+    if not beatmap_osu_file_data:
+        return False
+
+    text = beatmap_osu_file_data[:8192].decode("utf-8-sig", errors="replace")
+    lines = text.splitlines()
+    if not lines or not lines[0].startswith("osu file format v"):
+        return False
+
+    return "[General]" in text and "[Metadata]" in text
 
 
 async def _osu_file_cache_expired(
@@ -36,8 +49,32 @@ async def fetch_beatmap_osu_file_data(beatmap_id: int) -> bytes | None:
             extra={"beatmap_id": beatmap_id},
         )
 
-    beatmap_osu_file_data = await osu_api_v1.fetch_beatmap_osu_file_data(beatmap_id)
+    try:
+        fresh_beatmap_osu_file_data = await osu_api_v1.fetch_beatmap_osu_file_data(
+            beatmap_id,
+        )
+    except OsuApiBackoffError:
+        if beatmap_osu_file_data is not None:
+            logging.warning(
+                "Serving stale beatmap s3 osu file cache during osu! API backoff",
+                extra={"beatmap_id": beatmap_id},
+            )
+            return beatmap_osu_file_data
+
+        return None
+
+    beatmap_osu_file_data = fresh_beatmap_osu_file_data
     if beatmap_osu_file_data is None:
+        return None
+
+    if not _is_valid_osu_file_data(beatmap_osu_file_data):
+        logging.warning(
+            "Skipping invalid beatmap osu file cache save",
+            extra={
+                "beatmap_id": beatmap_id,
+                "data_size": len(beatmap_osu_file_data),
+            },
+        )
         return None
 
     await aws_s3.save_object_data(

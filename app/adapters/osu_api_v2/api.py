@@ -5,6 +5,9 @@ import httpx
 
 from app import oauth
 from app import settings
+from app.adapters.osu_api_backoff import OsuApiBackoff
+from app.adapters.osu_api_backoff import OsuApiBackoffError
+from app.adapters.osu_api_backoff import osu_api_rate_limiter
 from app.adapters.osu_api_v2.models import BeatmapExtended
 from app.adapters.osu_api_v2.models import BeatmapsetExtended
 from app.adapters.osu_api_v2.models import BeatmapsetSearchResponse
@@ -19,6 +22,8 @@ from app.common_models import GameMode
 OSU_API_V2_TOKEN_ENDPOINT = "https://osu.ppy.sh/oauth/token"
 
 
+osu_api_v2_backoff = OsuApiBackoff(rate_limiter=osu_api_rate_limiter)
+
 osu_api_v2_http_client = httpx.AsyncClient(
     base_url="https://osu.ppy.sh/api/v2/",
     auth=oauth.AsyncOAuth(
@@ -29,22 +34,39 @@ osu_api_v2_http_client = httpx.AsyncClient(
             ),
         ],
         token_endpoint=OSU_API_V2_TOKEN_ENDPOINT,
+        backoff=osu_api_v2_backoff,
     ),
     timeout=httpx.Timeout(15),
 )
 
 
 async def get_beatmap(beatmap_id: int) -> BeatmapExtended | None:
+    osu_api_v2_backoff.raise_if_unavailable(upstream="osu! API v2")
+
     osu_api_response_data: dict[str, Any] | None = None
+    endpoint = "beatmaps"
     try:
         response = await osu_api_v2_http_client.get(f"beatmaps/{beatmap_id}")
+        osu_api_v2_backoff.apply_if_rate_limited(
+            response,
+            upstream="osu! API v2",
+            endpoint=endpoint,
+        )
         if response.status_code in (404, 451):
+            osu_api_v2_backoff.record_success(
+                upstream="osu! API v2",
+                endpoint=endpoint,
+            )
             return None
         response.raise_for_status()
         osu_api_response_data = response.json()
         assert osu_api_response_data is not None
+        osu_api_v2_backoff.record_success(upstream="osu! API v2", endpoint=endpoint)
         return BeatmapExtended(**osu_api_response_data)
+    except OsuApiBackoffError:
+        raise
     except Exception:
+        osu_api_v2_backoff.record_failure(upstream="osu! API v2", endpoint=endpoint)
         logging.exception(
             "Failed to fetch beatmap from osu! API v2",
             extra={
@@ -56,16 +78,32 @@ async def get_beatmap(beatmap_id: int) -> BeatmapExtended | None:
 
 
 async def get_beatmapset(beatmapset_id: int) -> BeatmapsetExtended | None:
+    osu_api_v2_backoff.raise_if_unavailable(upstream="osu! API v2")
+
     osu_api_response_data: dict[str, Any] | None = None
+    endpoint = "beatmapsets"
     try:
         response = await osu_api_v2_http_client.get(f"beatmapsets/{beatmapset_id}")
+        osu_api_v2_backoff.apply_if_rate_limited(
+            response,
+            upstream="osu! API v2",
+            endpoint=endpoint,
+        )
         if response.status_code in (404, 451):
+            osu_api_v2_backoff.record_success(
+                upstream="osu! API v2",
+                endpoint=endpoint,
+            )
             return None
         response.raise_for_status()
         osu_api_response_data = response.json()
         assert osu_api_response_data is not None
+        osu_api_v2_backoff.record_success(upstream="osu! API v2", endpoint=endpoint)
         return BeatmapsetExtended(**osu_api_response_data)
+    except OsuApiBackoffError:
+        raise
     except Exception:
+        osu_api_v2_backoff.record_failure(upstream="osu! API v2", endpoint=endpoint)
         logging.exception(
             "Failed to fetch beatmapset from osu! API v2",
             extra={
@@ -93,7 +131,10 @@ async def search_beatmapsets(
     if [page, cursor_string].count(None) != 1:
         raise ValueError("Exactly one of page or cursor_string must be provided")
 
+    osu_api_v2_backoff.raise_if_unavailable(upstream="osu! API v2")
+
     osu_api_response_data: dict[str, Any] | None = None
+    endpoint = "beatmapsets/search"
     try:
         response = await osu_api_v2_http_client.get(
             "beatmapsets/search",
@@ -112,11 +153,20 @@ async def search_beatmapsets(
                 **({"cursor_string": cursor_string} if cursor_string else {}),
             },
         )
+        osu_api_v2_backoff.apply_if_rate_limited(
+            response,
+            upstream="osu! API v2",
+            endpoint=endpoint,
+        )
         response.raise_for_status()
         osu_api_response_data = response.json()
         assert osu_api_response_data is not None
+        osu_api_v2_backoff.record_success(upstream="osu! API v2", endpoint=endpoint)
         return BeatmapsetSearchResponse(**osu_api_response_data)
+    except OsuApiBackoffError:
+        raise
     except Exception:
+        osu_api_v2_backoff.record_failure(upstream="osu! API v2", endpoint=endpoint)
         logging.exception(
             "Failed to fetch beatmapsets from osu! API v2",
             extra={

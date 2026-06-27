@@ -7,12 +7,16 @@ import httpx
 from pydantic import BaseModel
 
 from app import settings
+from app.adapters.osu_api_backoff import OsuApiBackoff
+from app.adapters.osu_api_backoff import OsuApiBackoffError
+from app.adapters.osu_api_backoff import osu_api_rate_limiter
 from app.common_models import GameMode
 
 osu_api_v1_http_client = httpx.AsyncClient(
     base_url="https://old.ppy.sh/",
     timeout=httpx.Timeout(15),
 )
+osu_api_v1_backoff = OsuApiBackoff(rate_limiter=osu_api_rate_limiter)
 
 
 class Beatmap(BaseModel):
@@ -64,7 +68,10 @@ async def fetch_one_beatmap(
 ) -> Beatmap | None:
     assert [beatmap_id, beatmap_md5].count(None) == 1
 
+    osu_api_v1_backoff.raise_if_unavailable(upstream="osu! API v1")
+
     osu_api_response_data: list[dict[str, Any]] | None = None
+    endpoint = "get_beatmaps"
     try:
         osu_api_v1_key = random.choice(settings.OSU_API_V1_API_KEYS_POOL)
         response = await osu_api_v1_http_client.get(
@@ -82,17 +89,32 @@ async def fetch_one_beatmap(
                 "authorized": True,
             },
         )
+        osu_api_v1_backoff.apply_if_rate_limited(
+            response,
+            upstream="osu! API v1",
+            endpoint=endpoint,
+        )
         if response.status_code in (404, 451):
+            osu_api_v1_backoff.record_success(
+                upstream="osu! API v1",
+                endpoint=endpoint,
+            )
             return None
-        if response.status_code == 403:
-            raise ValueError("osu api is down") from None
         response.raise_for_status()
         osu_api_response_data = response.json()
         if osu_api_response_data == []:
+            osu_api_v1_backoff.record_success(
+                upstream="osu! API v1",
+                endpoint=endpoint,
+            )
             return None
         assert osu_api_response_data is not None
+        osu_api_v1_backoff.record_success(upstream="osu! API v1", endpoint=endpoint)
         return Beatmap(**osu_api_response_data[0])
+    except OsuApiBackoffError:
+        raise
     except Exception:
+        osu_api_v1_backoff.record_failure(upstream="osu! API v1", endpoint=endpoint)
         logging.exception(
             "Failed to fetch beatmap from osu! API v1",
             extra={
@@ -104,6 +126,9 @@ async def fetch_one_beatmap(
 
 
 async def fetch_beatmap_osu_file_data(beatmap_id: int) -> bytes | None:
+    osu_api_v1_backoff.raise_if_unavailable(upstream="osu! API v1")
+
+    endpoint = "osu_file"
     try:
         response = await osu_api_v1_http_client.get(f"osu/{beatmap_id}")
         logging.debug(
@@ -113,13 +138,24 @@ async def fetch_beatmap_osu_file_data(beatmap_id: int) -> bytes | None:
                 "authorized": False,
             },
         )
+        osu_api_v1_backoff.apply_if_rate_limited(
+            response,
+            upstream="osu! API v1",
+            endpoint=endpoint,
+        )
         if response.status_code in (404, 451):
+            osu_api_v1_backoff.record_success(
+                upstream="osu! API v1",
+                endpoint=endpoint,
+            )
             return None
-        if response.status_code == 403:
-            raise ValueError("osu api is down") from None
         response.raise_for_status()
+        osu_api_v1_backoff.record_success(upstream="osu! API v1", endpoint=endpoint)
         return response.read()
+    except OsuApiBackoffError:
+        raise
     except Exception:
+        osu_api_v1_backoff.record_failure(upstream="osu! API v1", endpoint=endpoint)
         logging.exception(
             "Failed to fetch beatmap osu file from osu! API v1",
             extra={"beatmap_id": beatmap_id},
