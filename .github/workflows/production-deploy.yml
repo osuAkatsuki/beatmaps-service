@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - fix/osu-api-backoff-beatmaps
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
