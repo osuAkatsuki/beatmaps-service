@@ -73,6 +73,11 @@ class AsyncOAuth(httpx.Auth):
                     upstream="osu! API v2",
                     endpoint="oauth/token",
                 )
+                self.backoff.record_rate_limit_headers(
+                    refresh_response,
+                    upstream="osu! API v2",
+                    endpoint="oauth/token",
+                )
             refresh_response_data = refresh_response.json()
             if "access_token" not in refresh_response_data:
                 logging.warning(
@@ -94,6 +99,11 @@ class AsyncOAuth(httpx.Auth):
             await refresh_response.aread()
             if self.backoff is not None:
                 self.backoff.apply_if_rate_limited(
+                    refresh_response,
+                    upstream="osu! API v2",
+                    endpoint="oauth/token",
+                )
+                self.backoff.record_rate_limit_headers(
                     refresh_response,
                     upstream="osu! API v2",
                     endpoint="oauth/token",
