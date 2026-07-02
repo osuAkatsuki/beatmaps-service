@@ -8,6 +8,8 @@ from app.adapters.osu_api_backoff import OsuApiBackoffError
 from app.common_models import RankedStatus
 from app.repositories import akatsuki_beatmaps
 from app.repositories.akatsuki_beatmaps import AkatsukiBeatmap
+from app.repositories.akatsuki_beatmaps import AkatsukiBeatmapSortBy
+from app.repositories.akatsuki_beatmaps import SortOrder
 
 IGNORED_BEATMAP_CHARS = dict.fromkeys(map(ord, r':\/*<>?"|'), None)
 FROZEN_STATUSES = {RankedStatus.RANKED, RankedStatus.APPROVED, RankedStatus.LOVED}
@@ -227,9 +229,13 @@ async def fetch_many(
     only_custom_ranked: bool = False,
     offset: int = 0,
     limit: int = 50,
+    sort_by: AkatsukiBeatmapSortBy = AkatsukiBeatmapSortBy.LATEST_UPDATE,
+    sort_order: SortOrder = SortOrder.DESC,
 ) -> list[AkatsukiBeatmap]:
     return await akatsuki_beatmaps.fetch_many(
         only_custom_ranked=only_custom_ranked,
         offset=offset,
         limit=limit,
+        sort_by=sort_by,
+        sort_order=sort_order,
     )
