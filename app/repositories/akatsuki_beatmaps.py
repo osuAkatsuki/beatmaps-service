@@ -12,12 +12,6 @@ from app.common_models import RankedStatus
 
 class AkatsukiBeatmapSortBy(str, Enum):
     LATEST_UPDATE = "latest_update"
-    BEATMAP_ID = "beatmap_id"
-    BEATMAPSET_ID = "beatmapset_id"
-    SONG_NAME = "song_name"
-    RANKED = "ranked"
-    BANCHO_RANKED_STATUS = "bancho_ranked_status"
-    MODE = "mode"
     PLAYCOUNT = "playcount"
     PASSCOUNT = "passcount"
     RATING = "rating"
@@ -118,12 +112,6 @@ def _parse_akatsuki_beatmap_record(rec: Record) -> AkatsukiBeatmap:
 
 SORT_COLUMNS = {
     AkatsukiBeatmapSortBy.LATEST_UPDATE: "latest_update",
-    AkatsukiBeatmapSortBy.BEATMAP_ID: "beatmap_id",
-    AkatsukiBeatmapSortBy.BEATMAPSET_ID: "beatmapset_id",
-    AkatsukiBeatmapSortBy.SONG_NAME: "song_name",
-    AkatsukiBeatmapSortBy.RANKED: "ranked",
-    AkatsukiBeatmapSortBy.BANCHO_RANKED_STATUS: "bancho_ranked_status",
-    AkatsukiBeatmapSortBy.MODE: "mode",
     AkatsukiBeatmapSortBy.PLAYCOUNT: "playcount",
     AkatsukiBeatmapSortBy.PASSCOUNT: "passcount",
     AkatsukiBeatmapSortBy.RATING: "rating",
@@ -178,13 +166,10 @@ async def fetch_many(
     where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
     sort_column = SORT_COLUMNS[sort_by]
     sort_direction = SORT_ORDERS[sort_order]
-    tie_breaker = (
-        "" if sort_by is AkatsukiBeatmapSortBy.BEATMAP_ID else ", beatmap_id ASC"
-    )
     query = f"""\
         SELECT * FROM beatmaps
         {where_clause}
-        ORDER BY {sort_column} {sort_direction}{tie_breaker}
+        ORDER BY {sort_column} {sort_direction}, beatmap_id ASC
         LIMIT :limit OFFSET :offset
     """
     recs = await state.database.fetch_all(query, values)
