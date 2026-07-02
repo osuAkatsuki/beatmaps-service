@@ -207,6 +207,14 @@ async def fetch_one_by_md5(beatmap_md5: str) -> AkatsukiBeatmap | None:
     return beatmap
 
 
-async def fetch_all_custom_ranked_beatmaps() -> list[AkatsukiBeatmap]:
-    beatmaps = await akatsuki_beatmaps.fetch_many_maps_with_custom_akatsuki_status()
-    return beatmaps
+async def fetch_many(
+    *,
+    only_custom_ranked: bool = False,
+    offset: int = 0,
+    limit: int = 50,
+) -> list[AkatsukiBeatmap]:
+    return await akatsuki_beatmaps.fetch_many(
+        only_custom_ranked=only_custom_ranked,
+        offset=offset,
+        limit=limit,
+    )

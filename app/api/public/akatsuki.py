@@ -3,21 +3,27 @@ Provides an API exposing Akatsuki's beatmaps, which
 include internal state such as ranked status updates.
 """
 
-import logging
-
 from fastapi import APIRouter
-from fastapi import Header
+from fastapi import Query
 from fastapi import Response
 
 from app.api.responses import JSONResponse
 from app.usecases import akatsuki_beatmaps
 
-router = APIRouter(tags=["Akatsuki Beatmaps"])
+router = APIRouter(tags=["(Public) Akatsuki Beatmaps"])
 
 
-@router.get("/api/akatsuki/v1/beatmaps/custom-ranked-beatmaps")
-async def fetch_all_custom_ranked_beatmaps() -> Response:
-    beatmaps = await akatsuki_beatmaps.fetch_all_custom_ranked_beatmaps()
+@router.get("/api/akatsuki/v1/beatmaps")
+async def fetch_many_beatmaps(
+    only_custom_ranked: bool = False,
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=100),
+) -> Response:
+    beatmaps = await akatsuki_beatmaps.fetch_many(
+        only_custom_ranked=only_custom_ranked,
+        offset=(page - 1) * limit,
+        limit=limit,
+    )
     return JSONResponse(
-        content=[AkatsukiBeatmap.model_dump() for AkatsukiBeatmap in beatmaps],
+        content=[beatmap.model_dump() for beatmap in beatmaps],
     )

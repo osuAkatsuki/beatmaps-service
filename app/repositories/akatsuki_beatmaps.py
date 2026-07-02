@@ -1,6 +1,7 @@
 from datetime import datetime
 from datetime import timedelta
 
+from databases.interfaces import Record
 from pydantic import BaseModel
 
 from app import state
@@ -67,13 +68,7 @@ class AkatsukiBeatmap(BaseModel):
         return f"[{self.url} {self.song_name}]"
 
 
-async def fetch_one_by_md5(beatmap_md5: str, /) -> AkatsukiBeatmap | None:
-    query = """\
-        SELECT * FROM beatmaps WHERE beatmap_md5 = :beatmap_md5
-    """
-    rec = await state.database.fetch_one(query, {"beatmap_md5": beatmap_md5})
-    if rec is None:
-        return None
+def _parse_akatsuki_beatmap_record(rec: Record) -> AkatsukiBeatmap:
     return AkatsukiBeatmap(
         beatmap_id=rec["beatmap_id"],
         beatmapset_id=rec["beatmapset_id"],
@@ -100,6 +95,16 @@ async def fetch_one_by_md5(beatmap_md5: str, /) -> AkatsukiBeatmap | None:
         bancho_creator_id=rec["bancho_creator_id"],
         bancho_creator_name=rec["bancho_creator_name"],
     )
+
+
+async def fetch_one_by_md5(beatmap_md5: str, /) -> AkatsukiBeatmap | None:
+    query = """\
+        SELECT * FROM beatmaps WHERE beatmap_md5 = :beatmap_md5
+    """
+    rec = await state.database.fetch_one(query, {"beatmap_md5": beatmap_md5})
+    if rec is None:
+        return None
+    return _parse_akatsuki_beatmap_record(rec)
 
 
 async def fetch_one_by_id(beatmap_id: int, /) -> AkatsukiBeatmap | None:
@@ -109,69 +114,36 @@ async def fetch_one_by_id(beatmap_id: int, /) -> AkatsukiBeatmap | None:
     rec = await state.database.fetch_one(query, {"beatmap_id": beatmap_id})
     if rec is None:
         return None
-    return AkatsukiBeatmap(
-        beatmap_id=rec["beatmap_id"],
-        beatmapset_id=rec["beatmapset_id"],
-        beatmap_md5=rec["beatmap_md5"],
-        song_name=rec["song_name"],
-        file_name=rec["file_name"],
-        ar=rec["ar"],
-        od=rec["od"],
-        mode=rec["mode"],
-        max_combo=rec["max_combo"],
-        hit_length=rec["hit_length"],
-        bpm=rec["bpm"],
-        ranked=rec["ranked"],
-        latest_update=rec["latest_update"],
-        ranked_status_freezed=rec["ranked_status_freezed"],
-        playcount=rec["playcount"],
-        passcount=rec["passcount"],
-        rankedby=rec["rankedby"],
-        rating=rec["rating"],
-        bancho_ranked_status=rec["bancho_ranked_status"],
-        count_circles=rec["count_circles"],
-        count_spinners=rec["count_spinners"],
-        count_sliders=rec["count_sliders"],
-        bancho_creator_id=rec["bancho_creator_id"],
-        bancho_creator_name=rec["bancho_creator_name"],
-    )
+    return _parse_akatsuki_beatmap_record(rec)
 
 
-async def fetch_many_maps_with_custom_akatsuki_status() -> list[AkatsukiBeatmap]:
-    query = """\
-        SELECT * FROM beatmaps WHERE ranked_status_freezed = 1 ORDER BY lastest_updated
-    """
-    rec = await state.database.fetch_all(query)
-    akatsuki_maps_with_custom_status: list[AkatsukiBeatmap] = []
-    for akatsuki_beatmap in rec:
-        beatmap = AkatsukiBeatmap(
-            beatmap_id=akatsuki_beatmap["beatmap_id"],
-            beatmapset_id=akatsuki_beatmap["beatmapset_id"],
-            beatmap_md5=akatsuki_beatmap["beatmap_md5"],
-            song_name=akatsuki_beatmap["song_name"],
-            file_name=akatsuki_beatmap["file_name"],
-            ar=akatsuki_beatmap["ar"],
-            od=akatsuki_beatmap["od"],
-            mode=akatsuki_beatmap["mode"],
-            max_combo=akatsuki_beatmap["max_combo"],
-            hit_length=akatsuki_beatmap["hit_length"],
-            bpm=akatsuki_beatmap["bpm"],
-            ranked=akatsuki_beatmap["ranked"],
-            latest_update=akatsuki_beatmap["latest_update"],
-            ranked_status_freezed=akatsuki_beatmap["ranked_status_freezed"],
-            playcount=akatsuki_beatmap["playcount"],
-            passcount=akatsuki_beatmap["passcount"],
-            rankedby=akatsuki_beatmap["rankedby"],
-            rating=akatsuki_beatmap["rating"],
-            bancho_ranked_status=akatsuki_beatmap["bancho_ranked_status"],
-            count_circles=akatsuki_beatmap["count_circles"],
-            count_spinners=akatsuki_beatmap["count_spinners"],
-            count_sliders=akatsuki_beatmap["count_sliders"],
-            bancho_creator_id=akatsuki_beatmap["bancho_creator_id"],
-            bancho_creator_name=akatsuki_beatmap["bancho_creator_name"],
+async def fetch_many(
+    *,
+    only_custom_ranked: bool = False,
+    offset: int = 0,
+    limit: int = 50,
+) -> list[AkatsukiBeatmap]:
+    conditions: list[str] = []
+    values: dict[str, object] = {"offset": offset, "limit": limit}
+
+    if only_custom_ranked:
+        conditions.extend(
+            [
+                "ranked_status_freezed = 1",
+                "bancho_ranked_status IS NOT NULL",
+                "ranked != bancho_ranked_status",
+            ],
         )
-        akatsuki_maps_with_custom_status.append(beatmap)
-    return akatsuki_maps_with_custom_status
+
+    where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+    query = f"""\
+        SELECT * FROM beatmaps
+        {where_clause}
+        ORDER BY latest_update DESC
+        LIMIT :limit OFFSET :offset
+    """
+    recs = await state.database.fetch_all(query, values)
+    return [_parse_akatsuki_beatmap_record(rec) for rec in recs]
 
 
 async def create_or_replace(beatmap: AkatsukiBeatmap) -> AkatsukiBeatmap:
@@ -232,32 +204,7 @@ async def create_or_replace(beatmap: AkatsukiBeatmap) -> AkatsukiBeatmap:
     )
     assert rec is not None
 
-    return AkatsukiBeatmap(
-        beatmap_id=rec["beatmap_id"],
-        beatmapset_id=rec["beatmapset_id"],
-        beatmap_md5=rec["beatmap_md5"],
-        song_name=rec["song_name"],
-        file_name=rec["file_name"],
-        ar=rec["ar"],
-        od=rec["od"],
-        mode=rec["mode"],
-        max_combo=rec["max_combo"],
-        hit_length=rec["hit_length"],
-        bpm=rec["bpm"],
-        ranked=rec["ranked"],
-        latest_update=rec["latest_update"],
-        ranked_status_freezed=rec["ranked_status_freezed"],
-        playcount=rec["playcount"],
-        passcount=rec["passcount"],
-        rankedby=rec["rankedby"],
-        rating=rec["rating"],
-        bancho_ranked_status=rec["bancho_ranked_status"],
-        count_circles=rec["count_circles"],
-        count_spinners=rec["count_spinners"],
-        count_sliders=rec["count_sliders"],
-        bancho_creator_id=rec["bancho_creator_id"],
-        bancho_creator_name=rec["bancho_creator_name"],
-    )
+    return _parse_akatsuki_beatmap_record(rec)
 
 
 async def delete_by_md5(beatmap_md5: str, /) -> None:
