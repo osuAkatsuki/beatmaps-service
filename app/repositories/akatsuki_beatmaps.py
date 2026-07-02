@@ -129,7 +129,6 @@ async def fetch_many(
     if only_custom_ranked:
         conditions.extend(
             [
-                "ranked_status_freezed = 1",
                 "bancho_ranked_status IS NOT NULL",
                 "ranked != bancho_ranked_status",
             ],
