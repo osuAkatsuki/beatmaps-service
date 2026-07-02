@@ -13,7 +13,7 @@ from app.usecases import akatsuki_beatmaps
 router = APIRouter(tags=["(Public) Akatsuki Beatmaps"])
 
 
-@router.get("/api/akatsuki/v1/beatmaps")
+@router.get("/public/api/akatsuki/v1/beatmaps")
 async def fetch_many_beatmaps(
     only_custom_ranked: bool = False,
     page: int = Query(1, ge=1),
