@@ -5,6 +5,7 @@ from app.adapters import aws_s3
 from app.adapters import discord_webhooks
 from app.adapters import osu_api_v1
 from app.adapters.osu_api_backoff import OsuApiBackoffError
+from app.common_models import GameMode
 from app.common_models import RankedStatus
 from app.repositories import akatsuki_beatmaps
 from app.repositories.akatsuki_beatmaps import AkatsukiBeatmap
@@ -231,6 +232,11 @@ async def fetch_many(
     limit: int = 50,
     sort_by: AkatsukiBeatmapSortBy = AkatsukiBeatmapSortBy.LATEST_UPDATE,
     sort_order: SortOrder = SortOrder.DESC,
+    ranked: list[RankedStatus] | None = None,
+    mode: list[GameMode] | None = None,
+    bancho_creator_id: int | None = None,
+    bancho_creator_name: str | None = None,
+    rankedby: int | None = None,
 ) -> list[AkatsukiBeatmap]:
     return await akatsuki_beatmaps.fetch_many(
         only_custom_ranked=only_custom_ranked,
@@ -238,4 +244,9 @@ async def fetch_many(
         limit=limit,
         sort_by=sort_by,
         sort_order=sort_order,
+        ranked=ranked,
+        mode=mode,
+        bancho_creator_id=bancho_creator_id,
+        bancho_creator_name=bancho_creator_name,
+        rankedby=rankedby,
     )

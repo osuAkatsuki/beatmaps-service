@@ -124,6 +124,26 @@ SORT_ORDERS = {
 }
 
 
+def _add_int_values_filter(
+    *,
+    conditions: list[str],
+    values: dict[str, object],
+    column_name: str,
+    param_name: str,
+    filter_values: list[int],
+) -> None:
+    if not filter_values:
+        return
+
+    placeholders: list[str] = []
+    for index, filter_value in enumerate(filter_values):
+        placeholder_name = f"{param_name}_{index}"
+        placeholders.append(f":{placeholder_name}")
+        values[placeholder_name] = filter_value
+
+    conditions.append(f"{column_name} IN ({', '.join(placeholders)})")
+
+
 async def fetch_one_by_md5(beatmap_md5: str, /) -> AkatsukiBeatmap | None:
     query = """\
         SELECT * FROM beatmaps WHERE beatmap_md5 = :beatmap_md5
@@ -151,6 +171,11 @@ async def fetch_many(
     limit: int = 50,
     sort_by: AkatsukiBeatmapSortBy = AkatsukiBeatmapSortBy.LATEST_UPDATE,
     sort_order: SortOrder = SortOrder.DESC,
+    ranked: list[RankedStatus] | None = None,
+    mode: list[GameMode] | None = None,
+    bancho_creator_id: int | None = None,
+    bancho_creator_name: str | None = None,
+    rankedby: int | None = None,
 ) -> list[AkatsukiBeatmap]:
     conditions: list[str] = []
     values: dict[str, object] = {"offset": offset, "limit": limit}
@@ -162,6 +187,36 @@ async def fetch_many(
                 "ranked != bancho_ranked_status",
             ],
         )
+
+    if ranked is not None:
+        _add_int_values_filter(
+            conditions=conditions,
+            values=values,
+            column_name="ranked",
+            param_name="ranked",
+            filter_values=[ranked_status.value for ranked_status in ranked],
+        )
+
+    if mode is not None:
+        _add_int_values_filter(
+            conditions=conditions,
+            values=values,
+            column_name="mode",
+            param_name="mode",
+            filter_values=[game_mode.value for game_mode in mode],
+        )
+
+    if bancho_creator_id is not None:
+        conditions.append("bancho_creator_id = :bancho_creator_id")
+        values["bancho_creator_id"] = bancho_creator_id
+
+    if bancho_creator_name is not None:
+        conditions.append("bancho_creator_name = :bancho_creator_name")
+        values["bancho_creator_name"] = bancho_creator_name
+
+    if rankedby is not None:
+        conditions.append("rankedby = :rankedby")
+        values["rankedby"] = rankedby
 
     where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
     sort_column = SORT_COLUMNS[sort_by]
