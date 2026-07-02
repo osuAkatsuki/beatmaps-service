@@ -1,5 +1,6 @@
 from datetime import datetime
 from datetime import timedelta
+from enum import Enum
 
 from databases.interfaces import Record
 from pydantic import BaseModel
@@ -7,6 +8,24 @@ from pydantic import BaseModel
 from app import state
 from app.common_models import GameMode
 from app.common_models import RankedStatus
+
+
+class AkatsukiBeatmapSortBy(str, Enum):
+    LATEST_UPDATE = "latest_update"
+    BEATMAP_ID = "beatmap_id"
+    BEATMAPSET_ID = "beatmapset_id"
+    SONG_NAME = "song_name"
+    RANKED = "ranked"
+    BANCHO_RANKED_STATUS = "bancho_ranked_status"
+    MODE = "mode"
+    PLAYCOUNT = "playcount"
+    PASSCOUNT = "passcount"
+    RATING = "rating"
+
+
+class SortOrder(str, Enum):
+    ASC = "asc"
+    DESC = "desc"
 
 
 class AkatsukiBeatmap(BaseModel):
@@ -97,6 +116,26 @@ def _parse_akatsuki_beatmap_record(rec: Record) -> AkatsukiBeatmap:
     )
 
 
+SORT_COLUMNS = {
+    AkatsukiBeatmapSortBy.LATEST_UPDATE: "latest_update",
+    AkatsukiBeatmapSortBy.BEATMAP_ID: "beatmap_id",
+    AkatsukiBeatmapSortBy.BEATMAPSET_ID: "beatmapset_id",
+    AkatsukiBeatmapSortBy.SONG_NAME: "song_name",
+    AkatsukiBeatmapSortBy.RANKED: "ranked",
+    AkatsukiBeatmapSortBy.BANCHO_RANKED_STATUS: "bancho_ranked_status",
+    AkatsukiBeatmapSortBy.MODE: "mode",
+    AkatsukiBeatmapSortBy.PLAYCOUNT: "playcount",
+    AkatsukiBeatmapSortBy.PASSCOUNT: "passcount",
+    AkatsukiBeatmapSortBy.RATING: "rating",
+}
+
+
+SORT_ORDERS = {
+    SortOrder.ASC: "ASC",
+    SortOrder.DESC: "DESC",
+}
+
+
 async def fetch_one_by_md5(beatmap_md5: str, /) -> AkatsukiBeatmap | None:
     query = """\
         SELECT * FROM beatmaps WHERE beatmap_md5 = :beatmap_md5
@@ -122,6 +161,8 @@ async def fetch_many(
     only_custom_ranked: bool = False,
     offset: int = 0,
     limit: int = 50,
+    sort_by: AkatsukiBeatmapSortBy = AkatsukiBeatmapSortBy.LATEST_UPDATE,
+    sort_order: SortOrder = SortOrder.DESC,
 ) -> list[AkatsukiBeatmap]:
     conditions: list[str] = []
     values: dict[str, object] = {"offset": offset, "limit": limit}
@@ -135,10 +176,15 @@ async def fetch_many(
         )
 
     where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+    sort_column = SORT_COLUMNS[sort_by]
+    sort_direction = SORT_ORDERS[sort_order]
+    tie_breaker = (
+        "" if sort_by is AkatsukiBeatmapSortBy.BEATMAP_ID else ", beatmap_id ASC"
+    )
     query = f"""\
         SELECT * FROM beatmaps
         {where_clause}
-        ORDER BY latest_update DESC
+        ORDER BY {sort_column} {sort_direction}{tie_breaker}
         LIMIT :limit OFFSET :offset
     """
     recs = await state.database.fetch_all(query, values)
