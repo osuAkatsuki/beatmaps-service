@@ -52,6 +52,11 @@ async def get_beatmap(beatmap_id: int) -> BeatmapExtended | None:
             upstream="osu! API v2",
             endpoint=endpoint,
         )
+        osu_api_v2_backoff.record_rate_limit_headers(
+            response,
+            upstream="osu! API v2",
+            endpoint=endpoint,
+        )
         if response.status_code in (404, 451):
             osu_api_v2_backoff.record_success(
                 upstream="osu! API v2",
@@ -85,6 +90,11 @@ async def get_beatmapset(beatmapset_id: int) -> BeatmapsetExtended | None:
     try:
         response = await osu_api_v2_http_client.get(f"beatmapsets/{beatmapset_id}")
         osu_api_v2_backoff.apply_if_rate_limited(
+            response,
+            upstream="osu! API v2",
+            endpoint=endpoint,
+        )
+        osu_api_v2_backoff.record_rate_limit_headers(
             response,
             upstream="osu! API v2",
             endpoint=endpoint,
@@ -154,6 +164,11 @@ async def search_beatmapsets(
             },
         )
         osu_api_v2_backoff.apply_if_rate_limited(
+            response,
+            upstream="osu! API v2",
+            endpoint=endpoint,
+        )
+        osu_api_v2_backoff.record_rate_limit_headers(
             response,
             upstream="osu! API v2",
             endpoint=endpoint,

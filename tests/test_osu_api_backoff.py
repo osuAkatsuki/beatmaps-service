@@ -100,6 +100,87 @@ class OsuApiBackoffTestCase(unittest.TestCase):
             mock_time.monotonic.return_value = started_at + 61
             self.assertEqual(backoff.state, CircuitState.HALF_OPEN)
 
+    def test_zero_remaining_rate_limit_header_opens_circuit(self) -> None:
+        backoff = OsuApiBackoff()
+
+        backoff.record_rate_limit_headers(
+            httpx.Response(
+                200,
+                headers={
+                    "X-Ratelimit-Limit": "1200",
+                    "X-Ratelimit-Remaining": "0",
+                },
+            ),
+            upstream="osu! API v2",
+            endpoint="beatmaps",
+        )
+
+        self.assertEqual(backoff.state, CircuitState.OPEN)
+        with self.assertRaises(OsuApiBackoffError):
+            backoff.raise_if_unavailable(upstream="osu! API v2")
+
+    def test_positive_remaining_rate_limit_header_does_not_open_circuit(self) -> None:
+        backoff = OsuApiBackoff()
+
+        backoff.record_rate_limit_headers(
+            httpx.Response(
+                200,
+                headers={
+                    "X-Ratelimit-Limit": "1200",
+                    "X-Ratelimit-Remaining": "1",
+                },
+            ),
+            upstream="osu! API v2",
+            endpoint="beatmaps",
+        )
+
+        self.assertEqual(backoff.state, CircuitState.CLOSED)
+
+    def test_rate_limit_reset_header_controls_cooldown(self) -> None:
+        backoff = OsuApiBackoff()
+        started_at = time.monotonic()
+
+        with patch("app.adapters.osu_api_backoff.time") as mock_time:
+            mock_time.monotonic.return_value = started_at
+            mock_time.time.return_value = 1000
+            backoff.record_rate_limit_headers(
+                httpx.Response(
+                    200,
+                    headers={
+                        "X-Ratelimit-Remaining": "0",
+                        "X-Ratelimit-Reset": "1030",
+                    },
+                ),
+                upstream="osu! API v2",
+                endpoint="beatmaps",
+            )
+
+            mock_time.monotonic.return_value = started_at + 29
+            self.assertEqual(backoff.state, CircuitState.OPEN)
+
+            mock_time.monotonic.return_value = started_at + 30
+            self.assertEqual(backoff.state, CircuitState.HALF_OPEN)
+
+    def test_rate_limit_response_uses_reset_header_without_retry_after(self) -> None:
+        backoff = OsuApiBackoff()
+        started_at = time.monotonic()
+
+        with patch("app.adapters.osu_api_backoff.time") as mock_time:
+            mock_time.monotonic.return_value = started_at
+            mock_time.time.return_value = 1000
+            with self.assertRaises(OsuApiBackoffError):
+                backoff.apply_if_rate_limited(
+                    httpx.Response(429, headers={"X-Ratelimit-Reset": "1030"}),
+                    upstream="osu! API v2",
+                    endpoint="beatmaps",
+                )
+
+            mock_time.monotonic.return_value = started_at + 29
+            self.assertEqual(backoff.state, CircuitState.OPEN)
+
+            mock_time.monotonic.return_value = started_at + 30
+            self.assertEqual(backoff.state, CircuitState.HALF_OPEN)
+
     def test_in_flight_success_does_not_close_open_circuit(self) -> None:
         backoff = OsuApiBackoff()
 

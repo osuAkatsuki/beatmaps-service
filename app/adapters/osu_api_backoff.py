@@ -13,6 +13,9 @@ DEFAULT_FAILURE_COOLDOWN_SECONDS = 10
 DEFAULT_RATE_LIMIT_COOLDOWN_SECONDS = 60
 DEFAULT_OSU_API_REQUESTS_PER_MINUTE = 600
 DEFAULT_OSU_API_BURST_SIZE = 10
+RATE_LIMIT_LIMIT_HEADER = "X-Ratelimit-Limit"
+RATE_LIMIT_REMAINING_HEADER = "X-Ratelimit-Remaining"
+RATE_LIMIT_RESET_HEADER = "X-Ratelimit-Reset"
 
 logger = logging.getLogger(__name__)
 
@@ -154,6 +157,7 @@ class OsuApiBackoff:
         endpoint: str,
         cooldown_seconds: float | None = None,
         force_open: bool = False,
+        log_extra: dict[str, object] | None = None,
     ) -> None:
         cooldown_seconds = cooldown_seconds or self._failure_cooldown_seconds
 
@@ -176,16 +180,20 @@ class OsuApiBackoff:
             self._cooldown_seconds = cooldown_seconds
             self._probe_in_flight = False
 
+        extra: dict[str, object] = {
+            "upstream": upstream,
+            "endpoint": endpoint,
+            "previous_state": previous_state,
+            "circuit_state": CircuitState.OPEN,
+            "consecutive_failures": self._consecutive_failures,
+            "cooldown_seconds": cooldown_seconds,
+        }
+        if log_extra is not None:
+            extra.update(log_extra)
+
         logger.warning(
             "Opened osu! API circuit",
-            extra={
-                "upstream": upstream,
-                "endpoint": endpoint,
-                "previous_state": previous_state,
-                "circuit_state": CircuitState.OPEN,
-                "consecutive_failures": self._consecutive_failures,
-                "cooldown_seconds": cooldown_seconds,
-            },
+            extra=extra,
         )
 
     def apply_if_rate_limited(
@@ -207,6 +215,37 @@ class OsuApiBackoff:
         )
         raise OsuApiBackoffError(
             f"{upstream} returned {response.status_code}; backing off",
+        )
+
+    def record_rate_limit_headers(
+        self,
+        response: httpx.Response,
+        *,
+        upstream: str,
+        endpoint: str,
+    ) -> None:
+        remaining = _get_int_header(response, RATE_LIMIT_REMAINING_HEADER)
+        if remaining is None or remaining > 0:
+            return
+
+        limit = _get_int_header(response, RATE_LIMIT_LIMIT_HEADER)
+        cooldown_seconds = _get_rate_limit_reset_cooldown_seconds(response)
+        if cooldown_seconds is None:
+            cooldown_seconds = DEFAULT_RATE_LIMIT_COOLDOWN_SECONDS
+
+        self.record_failure(
+            upstream=upstream,
+            endpoint=endpoint,
+            cooldown_seconds=cooldown_seconds,
+            force_open=True,
+            log_extra={
+                "reason": "rate_limit_headers_exhausted",
+                "rate_limit": {
+                    "limit": limit,
+                    "remaining": remaining,
+                    "reset": response.headers.get(RATE_LIMIT_RESET_HEADER),
+                },
+            },
         )
 
     def _evaluate_state(self) -> CircuitState:
@@ -254,6 +293,10 @@ class OsuApiBackoff:
 def _get_rate_limit_cooldown_seconds(response: httpx.Response) -> int:
     retry_after = response.headers.get("Retry-After")
     if retry_after is None:
+        reset_cooldown_seconds = _get_rate_limit_reset_cooldown_seconds(response)
+        if reset_cooldown_seconds is not None:
+            return reset_cooldown_seconds
+
         return DEFAULT_RATE_LIMIT_COOLDOWN_SECONDS
 
     try:
@@ -264,6 +307,30 @@ def _get_rate_limit_cooldown_seconds(response: httpx.Response) -> int:
             return DEFAULT_RATE_LIMIT_COOLDOWN_SECONDS
 
         return max(1, int((retry_at - datetime.now(timezone.utc)).total_seconds()))
+
+
+def _get_rate_limit_reset_cooldown_seconds(response: httpx.Response) -> int | None:
+    reset = response.headers.get(RATE_LIMIT_RESET_HEADER)
+    if reset is None:
+        return None
+
+    try:
+        reset_at = int(reset)
+    except ValueError:
+        return None
+
+    return max(1, reset_at - int(time.time()))
+
+
+def _get_int_header(response: httpx.Response, header: str) -> int | None:
+    value = response.headers.get(header)
+    if value is None:
+        return None
+
+    try:
+        return int(value)
+    except ValueError:
+        return None
 
 
 def _parse_retry_after_datetime(retry_after: str) -> datetime | None:
