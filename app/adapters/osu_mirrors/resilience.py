@@ -1,3 +1,4 @@
+import asyncio
 import time
 from dataclasses import dataclass
 from dataclasses import field
@@ -10,6 +11,11 @@ class CircuitState(StrEnum):
     HALF_OPEN = "half_open"  # Testing recovery, one request allowed
 
 
+MAX_COOLDOWN_SECONDS = 600.0  # 10 minutes
+RATE_LIMIT_REMAINING_THRESHOLD = 10
+MAX_RATE_LIMIT_WAIT_SECONDS = 2.0
+
+
 @dataclass
 class CircuitBreaker:
     """
@@ -17,27 +23,42 @@ class CircuitBreaker:
 
     Tracks failures and temporarily stops sending requests to a failing backend.
     After a cooldown period, allows a single probe request to test recovery.
+
+    Uses exponential backoff on cooldown: each time a probe fails and the
+    circuit re-opens, the cooldown doubles (up to MAX_COOLDOWN_SECONDS).
+    A successful probe resets the cooldown to the base value.
     """
 
     failure_threshold: int = 3
-    cooldown_seconds: float = 30.0
+    base_cooldown_seconds: float = 30.0
 
     state: CircuitState = field(default=CircuitState.CLOSED)
     consecutive_failures: int = field(default=0)
     opened_at: float | None = field(default=None)
+    current_cooldown: float = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.current_cooldown = self.base_cooldown_seconds
 
     def record_success(self) -> None:
         """Record a successful request. Resets failure count and closes circuit."""
         self.consecutive_failures = 0
         self.state = CircuitState.CLOSED
         self.opened_at = None
+        self.current_cooldown = self.base_cooldown_seconds
 
     def record_failure(self) -> None:
         """Record a failed request. Opens circuit if threshold is exceeded."""
         self.consecutive_failures += 1
         if self.consecutive_failures >= self.failure_threshold:
+            was_half_open = self.state == CircuitState.HALF_OPEN
             self.state = CircuitState.OPEN
             self.opened_at = time.time()
+            if was_half_open:
+                self.current_cooldown = min(
+                    self.current_cooldown * 2,
+                    MAX_COOLDOWN_SECONDS,
+                )
 
     def should_allow_request(self) -> bool:
         """Check if a request should be allowed through the circuit."""
@@ -48,7 +69,7 @@ class CircuitBreaker:
             if self.opened_at is None:
                 return True
             elapsed = time.time() - self.opened_at
-            if elapsed >= self.cooldown_seconds:
+            if elapsed >= self.current_cooldown:
                 # Transition to half-open, allow one probe request
                 self.state = CircuitState.HALF_OPEN
                 return True
@@ -113,7 +134,7 @@ class MirrorHealth:
     """
     Tracks health metrics for a single mirror.
 
-    Combines circuit breaker, rate limiting, and latency tracking.
+    Combines circuit breaker, rate limiting, and latency/failure tracking.
     """
 
     circuit: CircuitBreaker = field(default_factory=CircuitBreaker)
@@ -123,23 +144,56 @@ class MirrorHealth:
     latency_ema: float = field(default=1.0)
     latency_ema_alpha: float = field(default=0.3)  # Weight for new observations
 
+    # Exponential moving average of failure rate (0.0 = all success, 1.0 = all failure)
+    failure_ema: float = field(default=0.0)
+    failure_ema_alpha: float = field(default=0.2)
+
+    def score(self) -> float:
+        """Composite score for mirror ordering (lower is better).
+
+        Penalizes mirrors with higher failure rates so that a fast
+        but unreliable mirror ranks below a slower but reliable one.
+        """
+        return self.latency_ema * (1.0 + 3.0 * self.failure_ema)
+
     def is_available(self) -> bool:
-        """Check if this mirror is available for requests."""
+        """Check if this mirror is available for requests (non-blocking)."""
         if not self.circuit.should_allow_request():
             return False
         if self.rate_limiter is not None and not self.rate_limiter.try_acquire():
             return False
         return True
 
+    async def wait_for_availability(self) -> bool:
+        """Wait briefly for rate limiter tokens. Returns False if circuit is open."""
+        if not self.circuit.should_allow_request():
+            return False
+        if self.rate_limiter is not None:
+            wait = self.rate_limiter.time_until_available()
+            if wait > MAX_RATE_LIMIT_WAIT_SECONDS:
+                return False
+            if wait > 0:
+                await asyncio.sleep(wait)
+            self.rate_limiter.try_acquire()
+        return True
+
     def record_success(self, latency_seconds: float) -> None:
         """Record a successful request with its latency."""
         self.circuit.record_success()
-        # Update EMA: new_ema = alpha * observation + (1 - alpha) * old_ema
         self.latency_ema = (
             self.latency_ema_alpha * latency_seconds
             + (1 - self.latency_ema_alpha) * self.latency_ema
         )
+        self.failure_ema = (1 - self.failure_ema_alpha) * self.failure_ema
 
     def record_failure(self) -> None:
         """Record a failed request."""
         self.circuit.record_failure()
+        self.failure_ema = (
+            self.failure_ema_alpha + (1 - self.failure_ema_alpha) * self.failure_ema
+        )
+
+    def apply_rate_limit_pressure(self, remaining: int) -> None:
+        """Drain rate limiter tokens when upstream reports low remaining quota."""
+        if self.rate_limiter is not None and remaining < RATE_LIMIT_REMAINING_THRESHOLD:
+            self.rate_limiter.tokens = 0
